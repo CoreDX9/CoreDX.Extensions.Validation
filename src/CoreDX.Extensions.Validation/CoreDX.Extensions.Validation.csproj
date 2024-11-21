@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageVersion>1.0.0</PackageVersion>
+    <PackageTags>DataAnnotation Validator AsyncValidator ObjectGraphValidator</PackageTags>
+    <Description>Async validation and object graph validation extensions.</Description>
+    <Title>New helper classes modified from System.ComponentModel.DataAnnotations.Validator to support async validation and object graph validation.</Title>
+    <PackageReleaseNotes>First release.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netstandard2.1' Or '$(TargetFramework)' == 'net462' ">
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
+    <PackageReference Include="System.ComponentModel.Annotations" />
+    <PackageReference Include="System.ValueTuple" />
+  </ItemGroup>
+
+</Project>

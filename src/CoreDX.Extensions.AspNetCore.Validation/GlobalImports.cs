@@ -1,0 +1,1 @@
+﻿global using CoreDX.Extensions.ComponentModel.DataAnnotations;

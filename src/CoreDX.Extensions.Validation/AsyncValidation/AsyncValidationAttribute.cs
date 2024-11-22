@@ -85,8 +85,7 @@ public abstract class AsyncValidationAttribute : ValidationAttribute
         // If validation fails, we want to ensure we have a ValidationResult that guarantees it has an ErrorMessage
         if (result != null)
         {
-            var hasErrorMessage = result != null && !string.IsNullOrEmpty(result.ErrorMessage);
-            if (!hasErrorMessage)
+            if (string.IsNullOrEmpty(result.ErrorMessage))
             {
                 var errorMessage = FormatErrorMessage(validationContext.DisplayName);
                 result = new ValidationResult(errorMessage, result?.MemberNames);

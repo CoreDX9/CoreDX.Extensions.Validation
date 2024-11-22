@@ -16,7 +16,7 @@ namespace CoreDX.Extensions.Validation.Tests
         {
             await Assert.ThrowsAsync<ArgumentNullException>(
                 () => AsyncValidator.TryValidateObject(new object(), validationContext: null, validationResults: null));
-            Validator
+            
             await Assert.ThrowsAsync<ArgumentNullException>(
                 () => AsyncValidator.TryValidateObject(new object(), validationContext: null, validationResults: null, validateAllProperties: false));
         }

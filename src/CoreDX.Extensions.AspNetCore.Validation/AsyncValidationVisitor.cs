@@ -138,8 +138,8 @@ public class AsyncValidationVisitor
     /// <param name="model">The model object.</param>
     /// <param name="cancellationToken"></param>
     /// <returns><c>true</c> if the object is valid, otherwise <c>false</c>.</returns>
-    public async Task<bool> ValidateAsync(ModelMetadata metadata, string key, object model, CancellationToken cancellationToken = default)
-        => await ValidateAsync(
+    public Task<bool> ValidateAsync(ModelMetadata metadata, string key, object model, CancellationToken cancellationToken = default)
+        => ValidateAsync(
             metadata: metadata,
             key: key,
             model: model,
@@ -155,13 +155,13 @@ public class AsyncValidationVisitor
     /// <param name="alwaysValidateAtTopLevel">If <c>true</c>, applies validation rules even if the top-level value is <c>null</c>.</param>
     /// <param name="cancellationToken"></param>
     /// <returns><c>true</c> if the object is valid, otherwise <c>false</c>.</returns>
-    public virtual async Task<bool> ValidateAsync(
+    public virtual Task<bool> ValidateAsync(
         ModelMetadata? metadata,
         string? key,
         object? model,
         bool alwaysValidateAtTopLevel,
         CancellationToken cancellationToken = default
-        ) => await ValidateAsync(
+        ) => ValidateAsync(
             metadata: metadata,
             key: key,
             model: model,
@@ -435,7 +435,7 @@ public class AsyncValidationVisitor
     /// Validate a simple type.
     /// </summary>
     /// <returns>True if valid.</returns>
-    protected virtual async Task<bool> VisitSimpleTypeAsync(CancellationToken ct)
+    protected virtual async Task<bool> VisitSimpleTypeAsync(CancellationToken cancellationToken)
     {
         if (ModelState.HasReachedMaxErrors)
         {
@@ -443,7 +443,7 @@ public class AsyncValidationVisitor
             return false;
         }
 
-        return await ValidateNodeAsync(ct);
+        return await ValidateNodeAsync(cancellationToken);
     }
 
     /// <summary>

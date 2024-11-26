@@ -7,7 +7,7 @@ namespace CoreDX.Extensions.AspNetCore.Mvc.ModelBinding.Validation;
 /// <summary>
 /// Provides methods to validate an object graph.
 /// </summary>
-public interface IAsyncObjectModelValidator
+public interface IAsyncObjectModelValidator/* : IObjectModelValidator*/
 {
     /// <summary>
     /// Validates the provided object.
@@ -16,8 +16,6 @@ public interface IAsyncObjectModelValidator
     /// <param name="validationState"> The <see cref="ValidationStateDictionary"/>. May be null.</param>
     /// <param name="prefix">The model prefix. Used to map the model object to entries in validationState.</param>
     /// <param name="model">The model object.</param>
-    /// <param name="metadata">The metadata of model.</param>
-    /// <param name="container">The container of model.</param>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns></returns>
     Task ValidateAsync(
@@ -25,8 +23,6 @@ public interface IAsyncObjectModelValidator
         ValidationStateDictionary? validationState,
         string prefix,
         object model,
-        ModelMetadata? metadata = null,
-        object? container = null,
         CancellationToken cancellationToken = default);
 }
 
@@ -50,13 +46,11 @@ internal class AsyncObjectModelValidator : IAsyncObjectModelValidator
         _mvcOptions = mvcOptions;
     }
 
-    public virtual async Task ValidateAsync(
+    public virtual Task ValidateAsync(
         ActionContext actionContext,
         ValidationStateDictionary? validationState,
         string prefix,
         object model,
-        ModelMetadata? metadata = null,
-        object? container = null,
         CancellationToken cancellationToken = default
         )
     {
@@ -67,13 +61,43 @@ internal class AsyncObjectModelValidator : IAsyncObjectModelValidator
             _modelMetadataProvider,
             validationState);
 
-        await visitor.ValidateAsync(
+        var metadata = model == null ? null : _modelMetadataProvider.GetMetadataForType(model.GetType());
+        return visitor.ValidateAsync(
             metadata: metadata,
             key: prefix,
             model: model,
-            alwaysValidateAtTopLevel: metadata!.IsRequired,
-            container: container,
+            alwaysValidateAtTopLevel: false,
             cancellationToken: cancellationToken);
+    }
+
+    public virtual Task ValidateAsync(
+        ActionContext actionContext,
+        ValidationStateDictionary? validationState,
+        string prefix,
+        object model,
+        ModelMetadata metadata,
+        CancellationToken cancellationToken = default
+    ) =>
+        ValidateAsync(actionContext, validationState, prefix, model, metadata, container: null, cancellationToken);
+
+    public virtual Task ValidateAsync(
+        ActionContext actionContext,
+        ValidationStateDictionary? validationState,
+        string prefix,
+        object model,
+        ModelMetadata metadata,
+        object? container,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var visitor = GetValidationVisitor(
+            actionContext,
+            _modelValidatorProvider,
+            _validatorCache,
+            _modelMetadataProvider,
+            validationState);
+
+        return visitor.ValidateAsync(metadata, prefix, model, alwaysValidateAtTopLevel: metadata.IsRequired, container, cancellationToken);
     }
 
     public virtual AsyncValidationVisitor GetValidationVisitor(

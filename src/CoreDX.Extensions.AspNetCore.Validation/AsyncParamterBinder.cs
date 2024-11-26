@@ -12,26 +12,26 @@ namespace CoreDX.Extensions.AspNetCore.Mvc.ModelBinding.Validation;
 public partial class AsyncParamterBinder : ParameterBinder
 {
     private readonly IModelMetadataProvider _modelMetadataProvider;
-    private readonly IAsyncObjectModelValidator _validator;
+    private readonly IAsyncObjectModelValidator _asyncValidator;
 
     /// <inheritdoc/>
     public AsyncParamterBinder(
         IModelMetadataProvider modelMetadataProvider,
         IModelBinderFactory modelBinderFactory,
-        IAsyncObjectModelValidator validator,
-        IObjectModelValidator legacyValidator,
+        IAsyncObjectModelValidator asyncValidator,
+        IObjectModelValidator validator,
         IOptions<MvcOptions> mvcOptions,
         ILoggerFactory loggerFactory
         )
         : base(
             modelMetadataProvider: modelMetadataProvider,
             modelBinderFactory: modelBinderFactory,
-            validator: legacyValidator,
+            validator: validator,
             mvcOptions: mvcOptions,
             loggerFactory: loggerFactory)
     {
         _modelMetadataProvider = modelMetadataProvider;
-        _validator = validator;
+        _asyncValidator = asyncValidator;
     }
 
     /// <inheritdoc/>
@@ -87,12 +87,13 @@ public partial class AsyncParamterBinder : ParameterBinder
         await modelBinder.BindModelAsync(modelBindingContext);
 
         Log.DoneAttemptingToBindParameterOrProperty(Logger, parameter, metadata);
+
         var modelBindingResult = modelBindingContext.Result;
 
         Log.AttemptingToValidateParameterOrProperty(Logger, parameter, metadata);
 
         await EnforceBindRequiredAndValidateAsync(
-            _validator,
+            _asyncValidator,
             actionContext,
             parameter,
             metadata,
@@ -102,6 +103,7 @@ public partial class AsyncParamterBinder : ParameterBinder
             cancellationToken: default); // why?!??!
 
         Log.DoneAttemptingToValidateParameterOrProperty(Logger, parameter, metadata);
+
         return modelBindingResult;
     }
 
@@ -133,8 +135,6 @@ public partial class AsyncParamterBinder : ParameterBinder
                 validationState: modelBindingContext.ValidationState,
                 prefix: modelBindingContext.ModelName,
                 model: modelBindingResult.Model!,
-                metadata: metadata,
-                container: container,
                 cancellationToken: cancellationToken);
         }
         else if (metadata.IsRequired)
@@ -163,8 +163,6 @@ public partial class AsyncParamterBinder : ParameterBinder
                 validationState: modelBindingContext.ValidationState,
                 prefix: modelName,
                 model: modelBindingResult.Model!,
-                metadata: metadata,
-                container: container,
                 cancellationToken: cancellationToken);
         }
     }

@@ -65,11 +65,12 @@ public static class AsyncValidationExtension
         {
             ArgumentNullException.ThrowIfNull(options);
 
-            options.ModelValidatorProviders.Insert(0, new DefaultAsyncModelValidatorProvider());
             options.ModelValidatorProviders.Insert(0, new AsyncDataAnnotationsModelValidatorProvider(
                 _validationAttributeAdapterProvider,
                 _dataAnnotationLocalizationOptions,
                 _stringLocalizerFactory));
+
+            options.ModelValidatorProviders.Insert(0, new DefaultAsyncModelValidatorProvider());
         }
     }
 }
@@ -117,8 +118,6 @@ public static class AsyncValidatiorExtension
         {
             throw new ArgumentNullException(nameof(model));
         }
-
-        var validator = controller.HttpContext.RequestServices.GetRequiredService<IAsyncObjectModelValidator>();
 
         await TryValidateModelAsync(
             controller.ControllerContext,
@@ -168,8 +167,6 @@ public static class AsyncValidatiorExtension
             throw new ArgumentNullException(nameof(model));
         }
 
-        var validator = page.HttpContext.RequestServices.GetRequiredService<IAsyncObjectModelValidator>();
-
         await TryValidateModelAsync(
             page.PageContext,
             model: model,
@@ -210,8 +207,6 @@ public static class AsyncValidatiorExtension
             validationState: null,
             prefix: prefix ?? string.Empty,
             model: model,
-            metadata: null,
-            container: null,
             cancellationToken);
 
         return context.ModelState.IsValid;

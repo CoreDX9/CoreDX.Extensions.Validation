@@ -1262,59 +1262,59 @@ namespace CoreDX.Extensions.Validation.Tests
         #endregion ValidateValue
 
         [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-        public class ValidValueStringPropertyAttribute : ValidationAttribute
+        public class ValidValueStringPropertyAttribute : AsyncValidationAttribute
         {
-            protected override ValidationResult IsValid(object value, ValidationContext _)
+            protected override ValueTask<ValidationResult> IsValidAsync(object value, ValidationContext _, CancellationToken cancellationToken)
             {
-                if (value == null) { return ValidationResult.Success; }
+                if (value == null) { return ValueTask.FromResult(ValidationResult.Success); }
                 var valueAsString = value as string;
-                if ("Valid Value".Equals(valueAsString)) { return ValidationResult.Success; }
-                return new ValidationResult("ValidValueStringPropertyAttribute.IsValid failed for value " + value);
+                if ("Valid Value".Equals(valueAsString)) { return ValueTask.FromResult(ValidationResult.Success); }
+                return ValueTask.FromResult(new ValidationResult("ValidValueStringPropertyAttribute.IsValid failed for value " + value));
             }
         }
 
         // Allows easy testing that multiple failures can be reported
         [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-        public class ValidValueStringPropertyDuplicateAttribute : ValidationAttribute
+        public class ValidValueStringPropertyDuplicateAttribute : AsyncValidationAttribute
         {
-            protected override ValidationResult IsValid(object value, ValidationContext _)
+            protected override ValueTask<ValidationResult> IsValidAsync(object value, ValidationContext _, CancellationToken cancellationToken)
             {
                 if (value == null)
-                { return ValidationResult.Success; }
+                { return ValueTask.FromResult(ValidationResult.Success); }
                 var valueAsString = value as string;
                 if ("Valid Value".Equals(valueAsString))
-                { return ValidationResult.Success; }
-                return new ValidationResult("ValidValueStringPropertyAttribute.IsValid failed for value " + value);
+                { return ValueTask.FromResult(ValidationResult.Success); }
+                return ValueTask.FromResult(new ValidationResult("ValidValueStringPropertyAttribute.IsValid failed for value " + value));
             }
         }
 
         [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-        public class ValidClassAttribute : ValidationAttribute
+        public class ValidClassAttribute : AsyncValidationAttribute
         {
-            protected override ValidationResult IsValid(object value, ValidationContext _)
+            protected override ValueTask<ValidationResult> IsValidAsync(object value, ValidationContext _, CancellationToken cancellationToken)
             {
                 if (value == null)
-                { return ValidationResult.Success; }
+                { return ValueTask.FromResult(ValidationResult.Success); }
                 if (value.GetType().Name.ToLowerInvariant().Contains("invalid"))
                 {
-                    return new ValidationResult("ValidClassAttribute.IsValid failed for class of type " + value.GetType().FullName);
+                    return ValueTask.FromResult(new ValidationResult("ValidClassAttribute.IsValid failed for class of type " + value.GetType().FullName));
                 }
-                return ValidationResult.Success;
+                return ValueTask.FromResult(ValidationResult.Success);
             }
         }
 
         [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-        public class ValidClassDuplicateAttribute : ValidationAttribute
+        public class ValidClassDuplicateAttribute : AsyncValidationAttribute
         {
-            protected override ValidationResult IsValid(object value, ValidationContext _)
+            protected override ValueTask<ValidationResult> IsValidAsync(object value, ValidationContext _, CancellationToken cancellationToken)
             {
                 if (value == null)
-                { return ValidationResult.Success; }
+                { return ValueTask.FromResult(ValidationResult.Success); }
                 if (value.GetType().Name.ToLowerInvariant().Contains("invalid"))
                 {
-                    return new ValidationResult("ValidClassAttribute.IsValid failed for class of type " + value.GetType().FullName);
+                    return ValueTask.FromResult(new ValidationResult("ValidClassAttribute.IsValid failed for class of type " + value.GetType().FullName));
                 }
-                return ValidationResult.Success;
+                return ValueTask.FromResult(ValidationResult.Success);
             }
         }
 

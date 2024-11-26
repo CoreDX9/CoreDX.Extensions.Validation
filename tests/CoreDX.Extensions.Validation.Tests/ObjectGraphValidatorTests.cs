@@ -56,7 +56,7 @@ namespace CoreDX.Extensions.Validation.Tests
 
             var result = await ObjectGraphValidator.TryValidateObjectAsync(instance, context, null, true);
             var exception = await Assert.ThrowsAsync<ArgumentException>(() => ObjectGraphValidator.TryValidateObjectAsync(instance, context, null, true));
-            
+
             Assert.True(result);
             Assert.Equal("The validation context has already been used. (Parameter 'validationContext')", exception.Message);
         }

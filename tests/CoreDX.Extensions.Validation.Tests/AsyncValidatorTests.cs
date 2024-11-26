@@ -1259,6 +1259,17 @@ namespace CoreDX.Extensions.Validation.Tests
             await AsyncValidator.ValidateValue("Valid Value", validationContext, attributesToValidate);
         }
 
+        [Fact]
+        public static async Task ValidateValueThrowsIfUseNotImplementedAsyncValidationAttribute()
+        {
+            var validationContext = new ValidationContext(new ToBeValidated());
+            validationContext.MemberName = "PropertyToBeTested";
+            var attributesToValidate = new ValidationAttribute[] { new NotImplementedAsyncValidationAttribute() };
+            var exception = await Assert.ThrowsAsync<NotImplementedException>(
+                () => AsyncValidator.ValidateValue("Value", validationContext, attributesToValidate));
+            Assert.Equal("IsValidAsync(object value, CancellationToken cancellationToken) has not been implemented by this class.  The preferred entry point is GetValidationResultAsync() and classes should override IsValidAsync(object value, ValidationContext context, CancellationToken cancellationToken).", exception.Message);
+        }
+
         #endregion ValidateValue
 
         [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
@@ -1317,6 +1328,8 @@ namespace CoreDX.Extensions.Validation.Tests
                 return ValueTask.FromResult(ValidationResult.Success);
             }
         }
+
+        public class NotImplementedAsyncValidationAttribute : AsyncValidationAttribute { }
 
         public class HasDoubleFailureProperty
         {

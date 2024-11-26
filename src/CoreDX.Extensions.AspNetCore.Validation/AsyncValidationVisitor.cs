@@ -136,15 +136,15 @@ public class AsyncValidationVisitor
     /// <param name="metadata">The <see cref="ModelMetadata"/> associated with the model.</param>
     /// <param name="key">The model prefix key.</param>
     /// <param name="model">The model object.</param>
-    /// <param name="ct"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns><c>true</c> if the object is valid, otherwise <c>false</c>.</returns>
-    public async Task<bool> ValidateAsync(ModelMetadata metadata, string key, object model, CancellationToken ct = default)
+    public async Task<bool> ValidateAsync(ModelMetadata metadata, string key, object model, CancellationToken cancellationToken = default)
         => await ValidateAsync(
             metadata: metadata,
             key: key,
             model: model,
             alwaysValidateAtTopLevel: false,
-            ct: ct);
+            cancellationToken: cancellationToken);
 
     /// <summary>
     /// Validates a object.
@@ -153,21 +153,21 @@ public class AsyncValidationVisitor
     /// <param name="key">The model prefix key.</param>
     /// <param name="model">The model object.</param>
     /// <param name="alwaysValidateAtTopLevel">If <c>true</c>, applies validation rules even if the top-level value is <c>null</c>.</param>
-    /// <param name="ct"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns><c>true</c> if the object is valid, otherwise <c>false</c>.</returns>
     public virtual async Task<bool> ValidateAsync(
         ModelMetadata? metadata,
         string? key,
         object? model,
         bool alwaysValidateAtTopLevel,
-        CancellationToken ct = default
+        CancellationToken cancellationToken = default
         ) => await ValidateAsync(
             metadata: metadata,
             key: key,
             model: model,
             alwaysValidateAtTopLevel: alwaysValidateAtTopLevel,
             container: null,
-            ct: ct);
+            cancellationToken: cancellationToken);
 
     /// <summary>
     /// Validates a object.
@@ -177,7 +177,7 @@ public class AsyncValidationVisitor
     /// <param name="model">The model object.</param>
     /// <param name="alwaysValidateAtTopLevel">If <c>true</c>, applies validation rules even if the top-level value is <c>null</c>.</param>
     /// <param name="container">The model container.</param>
-    /// <param name="ct"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns><c>true</c> if the object is valid, otherwise <c>false</c>.</returns>
     public virtual async Task<bool> ValidateAsync(
         ModelMetadata? metadata,
@@ -185,7 +185,7 @@ public class AsyncValidationVisitor
         object? model,
         bool alwaysValidateAtTopLevel,
         object? container,
-        CancellationToken ct = default
+        CancellationToken cancellationToken = default
         )
     {
         if (container != null && metadata!.MetadataKind != ModelMetadataKind.Property)
@@ -211,14 +211,14 @@ public class AsyncValidationVisitor
         // Invoking StateManager.Recurse later in this invocation will result in it being correctly used as the container instance during the
         // validation of "model".
         Model = container;
-        return await VisitAsync(metadata!, key, model, ct: ct);
+        return await VisitAsync(metadata!, key, model, cancellationToken: cancellationToken);
     }
 
     /// <summary>
     /// Validates a single node in a model object graph.
     /// </summary>
     /// <returns><c>true</c> if the node is valid, otherwise <c>false</c>.</returns>
-    protected virtual async Task<bool> ValidateNodeAsync(CancellationToken ct = default)
+    protected virtual async Task<bool> ValidateNodeAsync(CancellationToken cancellationToken = default)
     {
         Debug.Assert(Key != null);
         Debug.Assert(Metadata != null);
@@ -245,7 +245,7 @@ public class AsyncValidationVisitor
                 {
                     if (validators[i] is IAsyncModelValidator asyncValidator)
                     {
-                        results.AddRange(await asyncValidator.ValidateAsync(context, ct));
+                        results.AddRange(await asyncValidator.ValidateAsync(context, cancellationToken));
                     }
                     else
                     {
@@ -291,14 +291,14 @@ public class AsyncValidationVisitor
     /// <param name="metadata">The model metadata.</param>
     /// <param name="key">The key to validate.</param>
     /// <param name="model">The model to validate.</param>
-    /// <param name="ct"></param>
+    /// <param name="cancellationToken"></param>
     /// <see langword="true"/> if the specified model key is valid, otherwise <see langword="false"/>.
     /// <returns>Whether the the specified model key is valid.</returns>
     protected virtual async Task<bool> VisitAsync(
         ModelMetadata metadata,
         string? key,
         object? model,
-        CancellationToken ct = default
+        CancellationToken cancellationToken = default
         )
     {
         RuntimeHelpers.EnsureSufficientExecutionStack();
@@ -313,7 +313,7 @@ public class AsyncValidationVisitor
         try
         {
             // Throws InvalidOperationException if the object graph is too deep
-            result = await VisitImplementationAsync(metadata, key, model, ct);
+            result = await VisitImplementationAsync(metadata, key, model, cancellationToken);
         }
         finally
         {
@@ -322,7 +322,7 @@ public class AsyncValidationVisitor
         return result;
     }
 
-    private async Task<bool> VisitImplementationAsync(ModelMetadata metadata, string? key, object? model, CancellationToken ct = default)
+    private async Task<bool> VisitImplementationAsync(ModelMetadata metadata, string? key, object? model, CancellationToken cancellationToken = default)
     {
         if (MaxValidationDepth != null && _currentPath.Count > MaxValidationDepth)
         {
@@ -391,10 +391,10 @@ public class AsyncValidationVisitor
         using (StateManager.Recurse(this, key ?? string.Empty, metadata, model, strategy!))
         {
             return Metadata!.IsEnumerableType
-                ? await VisitComplexTypeAsync(DefaultCollectionValidationStrategy.Instance, ct)
+                ? await VisitComplexTypeAsync(DefaultCollectionValidationStrategy.Instance, cancellationToken)
                 : Metadata.IsComplexType
-                    ? await VisitComplexTypeAsync(DefaultComplexObjectValidationStrategy.Instance, ct)
-                    : await VisitSimpleTypeAsync(ct);
+                    ? await VisitComplexTypeAsync(DefaultComplexObjectValidationStrategy.Instance, cancellationToken)
+                    : await VisitSimpleTypeAsync(cancellationToken);
         }
     }
 
@@ -402,16 +402,16 @@ public class AsyncValidationVisitor
     /// Validate complex types, this covers everything VisitSimpleType does not i.e. both enumerations and complex types.
     /// </summary>
     /// <param name="defaultStrategy">The default validation strategy to use.</param>
-    /// <param name="ct"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns><see langword="true" /> if valid, otherwise <see langword="false" />.</returns>
-    protected virtual async Task<bool> VisitComplexTypeAsync(IValidationStrategy defaultStrategy, CancellationToken ct = default)
+    protected virtual async Task<bool> VisitComplexTypeAsync(IValidationStrategy defaultStrategy, CancellationToken cancellationToken = default)
     {
         var isValid = true;
 
         if (Model != null && Metadata!.ValidateChildren)
         {
             var strategy = Strategy ?? defaultStrategy;
-            isValid = await VisitChildrenAsync(strategy, ct);
+            isValid = await VisitChildrenAsync(strategy, cancellationToken);
         }
         else if (Model != null)
         {
@@ -425,7 +425,7 @@ public class AsyncValidationVisitor
         // If validation has failed for any children, only validate the parent if ValidateComplexTypesIfChildValidationFails is true.
         if ((isValid || ValidateComplexTypesIfChildValidationFails) && !ModelState.HasReachedMaxErrors)
         {
-            isValid &= await ValidateNodeAsync(ct);
+            isValid &= await ValidateNodeAsync(cancellationToken);
         }
 
         return isValid;
@@ -450,9 +450,9 @@ public class AsyncValidationVisitor
     /// Validate all the child nodes using the specified strategy.
     /// </summary>
     /// <param name="strategy">The validation strategy.</param>
-    /// <param name="ct"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns><see langword="true" /> if all children are valid, otherwise <see langword="false" />.</returns>
-    protected virtual async Task<bool> VisitChildrenAsync(IValidationStrategy strategy, CancellationToken ct = default)
+    protected virtual async Task<bool> VisitChildrenAsync(IValidationStrategy strategy, CancellationToken cancellationToken = default)
     {
         Debug.Assert(Metadata is not null && Key is not null && Model is not null);
 
@@ -471,7 +471,7 @@ public class AsyncValidationVisitor
                 continue;
             }
 
-            isValid &= await VisitAsync(metadata, key, entry.Model, ct);
+            isValid &= await VisitAsync(metadata, key, entry.Model, cancellationToken);
         }
 
         return isValid;

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Localization;
@@ -70,5 +71,149 @@ public static class AsyncValidationExtension
                 _dataAnnotationLocalizationOptions,
                 _stringLocalizerFactory));
         }
+    }
+}
+
+/// <summary>
+/// Helper class for try validate model asynchronously in controllers and pages.
+/// </summary>
+public static class AsyncValidatiorExtension
+{
+    /// <summary>
+    /// Validates the specified <paramref name="model"/> instance.
+    /// </summary>
+    /// <param name="controller">The controller.</param>
+    /// <param name="model">The model to validate.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns><c>true</c> if the <see cref="ControllerBase.ModelState"/> is valid;<c>false</c> otherwise.</returns>
+    public static Task<bool> TryValidateModelAsync(
+        this ControllerBase controller,
+        object model,
+        CancellationToken cancellationToken = default)
+    {
+        return TryValidateModelAsync(controller, model, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Validates the specified <paramref name="model"/> instance.
+    /// </summary>
+    /// <param name="controller">The controller.</param>
+    /// <param name="model">The model to validate.</param>
+    /// <param name="prefix">The key to use when looking up information in <see cref="ControllerBase.ModelState"/>.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns><c>true</c> if the <see cref="ControllerBase.ModelState"/> is valid;<c>false</c> otherwise.</returns>
+    public static async Task<bool> TryValidateModelAsync(
+        this ControllerBase controller,
+        object model,
+        string? prefix,
+        CancellationToken cancellationToken = default)
+    {
+        if (controller is null)
+        {
+            throw new ArgumentNullException(nameof(controller));
+        }
+
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        var validator = controller.HttpContext.RequestServices.GetRequiredService<IAsyncObjectModelValidator>();
+
+        await TryValidateModelAsync(
+            controller.ControllerContext,
+            model: model,
+            prefix: prefix ?? string.Empty,
+            cancellationToken);
+
+        return controller.ModelState.IsValid;
+    }
+
+    /// <summary>
+    /// Validates the specified <paramref name="model"/> instance.
+    /// </summary>
+    /// <param name="page">The controller.</param>
+    /// <param name="model">The model to validate.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns><c>true</c> if the <see cref="PageModel.ModelState"/> is valid;<c>false</c> otherwise.</returns>
+    public static Task<bool> TryValidateModelAsync(
+        this PageModel page,
+        object model,
+        CancellationToken cancellationToken = default)
+    {
+        return TryValidateModelAsync(page, model, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Validates the specified <paramref name="model"/> instance.
+    /// </summary>
+    /// <param name="page">The page.</param>
+    /// <param name="model">The model to validate.</param>
+    /// <param name="prefix">The key to use when looking up information in <see cref="PageModel.ModelState"/>.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns><c>true</c> if the <see cref="PageModel.ModelState"/> is valid;<c>false</c> otherwise.</returns>
+    public static async Task<bool> TryValidateModelAsync(
+        this PageModel page,
+        object model,
+        string? prefix,
+        CancellationToken cancellationToken = default)
+    {
+        if (page is null)
+        {
+            throw new ArgumentNullException(nameof(page));
+        }
+
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        var validator = page.HttpContext.RequestServices.GetRequiredService<IAsyncObjectModelValidator>();
+
+        await TryValidateModelAsync(
+            page.PageContext,
+            model: model,
+            prefix: prefix ?? string.Empty,
+            cancellationToken);
+
+        return page.ModelState.IsValid;
+    }
+
+    /// <summary>
+    /// Validates the specified <paramref name="model"/> instance.
+    /// </summary>
+    /// <param name="context">The controller.</param>
+    /// <param name="model">The model to validate.</param>
+    /// <param name="prefix">The key to use when looking up information in <see cref="ActionContext.ModelState"/>.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <returns><c>true</c> if the <see cref="ActionContext.ModelState"/> is valid;<c>false</c> otherwise.</returns>
+    private static async Task<bool> TryValidateModelAsync(
+        ActionContext context,
+        object model,
+        string? prefix,
+        CancellationToken cancellationToken = default)
+    {
+        if (context is null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
+        if (model is null)
+        {
+            throw new ArgumentNullException(nameof(model));
+        }
+
+        var validator = context.HttpContext.RequestServices.GetRequiredService<IAsyncObjectModelValidator>();
+
+        await validator.ValidateAsync(
+            context,
+            validationState: null,
+            prefix: prefix ?? string.Empty,
+            model: model,
+            metadata: null,
+            container: null,
+            cancellationToken);
+
+        return context.ModelState.IsValid;
     }
 }

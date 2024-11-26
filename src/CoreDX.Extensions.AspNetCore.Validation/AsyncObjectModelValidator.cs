@@ -18,16 +18,16 @@ public interface IAsyncObjectModelValidator
     /// <param name="model">The model object.</param>
     /// <param name="metadata">The metadata of model.</param>
     /// <param name="container">The container of model.</param>
-    /// <param name="ct">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns></returns>
     Task ValidateAsync(
         ActionContext actionContext,
-        ValidationStateDictionary validationState,
+        ValidationStateDictionary? validationState,
         string prefix,
         object model,
         ModelMetadata? metadata = null,
         object? container = null,
-        CancellationToken ct = default);
+        CancellationToken cancellationToken = default);
 }
 
 internal class AsyncObjectModelValidator : IAsyncObjectModelValidator
@@ -52,12 +52,12 @@ internal class AsyncObjectModelValidator : IAsyncObjectModelValidator
 
     public virtual async Task ValidateAsync(
         ActionContext actionContext,
-        ValidationStateDictionary validationState,
+        ValidationStateDictionary? validationState,
         string prefix,
         object model,
         ModelMetadata? metadata = null,
         object? container = null,
-        CancellationToken ct = default
+        CancellationToken cancellationToken = default
         )
     {
         var visitor = GetValidationVisitor(
@@ -73,7 +73,7 @@ internal class AsyncObjectModelValidator : IAsyncObjectModelValidator
             model: model,
             alwaysValidateAtTopLevel: metadata!.IsRequired,
             container: container,
-            ct: ct);
+            cancellationToken: cancellationToken);
     }
 
     public virtual AsyncValidationVisitor GetValidationVisitor(
@@ -81,7 +81,7 @@ internal class AsyncObjectModelValidator : IAsyncObjectModelValidator
         IModelValidatorProvider validatorProvider,
         ValidatorCache validatorCache,
         IModelMetadataProvider metadataProvider,
-        ValidationStateDictionary validationState)
+        ValidationStateDictionary? validationState)
     {
         return new AsyncValidationVisitor(
             actionContext,

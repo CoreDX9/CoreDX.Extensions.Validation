@@ -2,10 +2,35 @@
 Add async model validation services for Microsoft Asp.Net Core MVC.
 
 ## How to Use
+
+1. ServiceCollection
 ``` csharp
 services
     .AddMvc()
     .AddAsyncValidation();
+```
+
+2. MVC and Razor pages
+``` csharp
+using Microsoft.AspNetCore.Mvc;
+
+public class MyController : ControllerBase
+{
+    public async Task Post(CustomModel input)
+    {
+        await this.TryValidateModelAsync(input);
+    }
+}
+
+public class MyModel : PageModel
+{
+    public CustomModel Input { get; set; }
+
+    public async Task OnPostAsync()
+    {
+        await this.TryValidateModelAsync(Input);
+    }
+}
 ```
 
 ## Main Types

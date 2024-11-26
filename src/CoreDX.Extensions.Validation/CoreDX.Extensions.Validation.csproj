@@ -11,6 +11,7 @@
       Update AsyncValidationAttribute to make its usage more similar to ValidationAttribute.
       Make protected abstract IsValidAsync(object?, ValidationContext, CancellationToken) to protected virtual method.
       Add public virtual method IsValidAsync(object?, CancellationToken).
+      Change all return type to ValueTask.
     </PackageReleaseNotes>
   </PropertyGroup>
 

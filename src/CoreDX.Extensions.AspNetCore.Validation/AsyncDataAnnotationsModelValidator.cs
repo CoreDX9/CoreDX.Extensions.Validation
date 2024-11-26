@@ -12,9 +12,9 @@ public interface IAsyncModelValidator : IModelValidator
     /// Validates the model value.
     /// </summary>
     /// <param name="context">The <see cref="ModelValidationContext"/>.</param>
-    /// <param name="ct">A cancellation token to observe while waiting for the task to complete.</param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>A list of <see cref="ModelValidationResult"/> indicating the results of validating the model value.</returns>
-    Task<IEnumerable<ModelValidationResult>> ValidateAsync(ModelValidationContext context, CancellationToken ct = default);
+    Task<IEnumerable<ModelValidationResult>> ValidateAsync(ModelValidationContext context, CancellationToken cancellationToken = default);
 }
 
 internal sealed class AsyncDataAnnotationsModelValidator : IAsyncModelValidator
@@ -55,9 +55,9 @@ internal sealed class AsyncDataAnnotationsModelValidator : IAsyncModelValidator
     /// Validates the context against the <see cref="AsyncValidationAttribute"/>.
     /// </summary>
     /// <param name="validationContext">The context being validated.</param>
-    /// <param name="ct"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns>An enumerable of the validation results.</returns>
-    public async Task<IEnumerable<ModelValidationResult>> ValidateAsync(ModelValidationContext validationContext, CancellationToken ct = default)
+    public async Task<IEnumerable<ModelValidationResult>> ValidateAsync(ModelValidationContext validationContext, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(validationContext);
         if (validationContext.ModelMetadata == null)
@@ -82,7 +82,7 @@ internal sealed class AsyncDataAnnotationsModelValidator : IAsyncModelValidator
             MemberName = memberName
         };
 
-        var result = await Attribute.GetValidationResultAsync(validationContext.Model, context, ct);
+        var result = await Attribute.GetValidationResultAsync(validationContext.Model, context, cancellationToken);
         if (result is not null)
         {
             string? errorMessage;

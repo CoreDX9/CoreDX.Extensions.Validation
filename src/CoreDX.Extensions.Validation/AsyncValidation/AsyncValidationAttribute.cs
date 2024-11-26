@@ -82,7 +82,7 @@ public abstract class AsyncValidationAttribute : ValidationAttribute
     ///     is thrown when neither overload of IsValid has been implemented
     ///     by a derived class.
     /// </exception>
-    public virtual async Task<bool> IsValidAsync(object? value, CancellationToken cancellationToken = default)
+    public virtual async ValueTask<bool> IsValidAsync(object? value, CancellationToken cancellationToken = default)
     {
         if (!_hasBaseIsValidAsync)
         {
@@ -158,7 +158,7 @@ public abstract class AsyncValidationAttribute : ValidationAttribute
     /// <exception cref="InvalidOperationException"> is thrown when <see cref="IsValid(object, ValidationContext)" />
     /// is called.
     /// </exception>
-    public async Task<ValidationResult?> GetValidationResultAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken = default)
+    public async ValueTask<ValidationResult?> GetValidationResultAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken = default)
     {
         if (validationContext == null)
         {
@@ -200,7 +200,7 @@ public abstract class AsyncValidationAttribute : ValidationAttribute
     ///     is thrown if <see cref="IsValidAsync(object, CancellationToken)" /> returns <c>false</c>.
     /// </exception>
     /// <exception cref="InvalidOperationException"> is thrown if the current attribute is malformed.</exception>
-    public async Task ValidateAsync(object? value, string name, CancellationToken cancellationToken = default)
+    public async ValueTask ValidateAsync(object? value, string name, CancellationToken cancellationToken = default)
     {
         if (!(await IsValidAsync(value, cancellationToken)))
         {
@@ -226,7 +226,7 @@ public abstract class AsyncValidationAttribute : ValidationAttribute
     /// <exception cref="NotImplementedException"> is thrown when <see cref="IsValidAsync(object, ValidationContext, CancellationToken)" />
     /// has not been implemented by a derived class.
     /// </exception>
-    public async Task ValidateAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken = default)
+    public async ValueTask ValidateAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken = default)
     {
         if (validationContext == null)
         {

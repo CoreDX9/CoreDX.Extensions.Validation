@@ -188,7 +188,12 @@ internal sealed class ValidationAttributeStore
         internal const DynamicallyAccessedMemberTypes DynamicallyAccessedTypes = DynamicallyAccessedMemberTypes.All;
         internal const string _typesPropertiesCannotBeStaticallyDiscovered = "The Types of _type's properties cannot be statically discovered.";
 #endif
+
+#if NET9_0_OR_GREATER
+        private readonly Lock _syncRoot = new Lock();
+#else
         private readonly object _syncRoot = new object();
+#endif
 
 #if NET6_0_OR_GREATER
         [DynamicallyAccessedMembers(DynamicallyAccessedTypes)]

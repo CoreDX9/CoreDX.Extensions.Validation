@@ -24,13 +24,11 @@ public static class AsyncValidationExtension
     {
         builder.Services.AddSingleton<IConfigureOptions<MvcOptions>, ConfigureMvcOptionsSetup>();
         builder.Services.AddSingleton<ParameterBinder, AsyncParamterBinder>();
-        builder.Services.TryAddSingleton<ValidatorCache>();
         builder.Services.TryAddSingleton<IAsyncObjectModelValidator>(s =>
         {
             var options = s.GetRequiredService<IOptions<MvcOptions>>().Value;
-            var cache = s.GetRequiredService<ValidatorCache>();
             var metadataProvider = s.GetRequiredService<IModelMetadataProvider>();
-            return new AsyncObjectModelValidator(metadataProvider, options.ModelValidatorProviders, cache, options);
+            return new DefaultAsyncObjecValidator(metadataProvider, options.ModelValidatorProviders, options);
         });
         return builder;
     }
@@ -45,13 +43,12 @@ public static class AsyncValidationExtension
     {
         builder.Services.AddSingleton<IConfigureOptions<MvcOptions>, ConfigureMvcOptionsSetup>();
         builder.Services.AddSingleton<ParameterBinder, AsyncParamterBinder>();
-        builder.Services.TryAddSingleton<ValidatorCache>();
         builder.Services.TryAddSingleton<IAsyncObjectModelValidator>(s =>
         {
             var options = s.GetRequiredService<IOptions<MvcOptions>>().Value;
             var cache = s.GetRequiredService<ValidatorCache>();
             var metadataProvider = s.GetRequiredService<IModelMetadataProvider>();
-            return new AsyncObjectModelValidator(metadataProvider, options.ModelValidatorProviders, cache, options);
+            return new DefaultAsyncObjecValidator(metadataProvider, options.ModelValidatorProviders, options);
         });
         return builder;
     }

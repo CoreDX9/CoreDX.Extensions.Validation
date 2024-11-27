@@ -33,7 +33,7 @@ public static partial class ObjectGraphValidator
     private static readonly object _validatedObjectsKey = new object();
     private static readonly object _validateObjectOwnerKey = new object();
 
-    private static ValidationAttributeStore _store = ValidationAttributeStore.Instance;
+    private static readonly ValidationAttributeStore _store = ValidationAttributeStore.Instance;
 
     private static readonly
 #if NET8_0_OR_GREATER
@@ -603,7 +603,7 @@ public static partial class ObjectGraphValidator
     {
         if (destinationType == null)
         {
-            throw new ArgumentNullException("destinationType");
+            throw new ArgumentNullException(nameof(destinationType));
         }
 
         if (value == null)
@@ -628,7 +628,7 @@ public static partial class ObjectGraphValidator
     {
         if (!CanBeAssigned(propertyType, value))
         {
-            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "Validator_Property_Value_Wrong_Type", propertyName, propertyType), nameof(value));
+            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "The value for property '{0}' must be of type '{1}'.", propertyName, propertyType), nameof(value));
         }
     }
 
@@ -656,7 +656,7 @@ public static partial class ObjectGraphValidator
     {
         if (validationContext == null)
         {
-            throw new ArgumentNullException("validationContext");
+            throw new ArgumentNullException(nameof(validationContext));
         }
 
         Debug.Assert(instance != null);
@@ -1150,11 +1150,16 @@ public static partial class ObjectGraphValidator
         if (!err.ValidationResult.MemberNames.Any())
         {
             validationResultStore.Add((FieldIdentifier)err.ValidationContext.Items[_validateObjectOwnerKey]!, err.ValidationResult);
+            return;
         }
 
+        var modelIdentyfier = (FieldIdentifier)err.ValidationContext.Items[_validateObjectOwnerKey]!;
         foreach (var memberName in err.ValidationResult.MemberNames)
         {
-            validationResultStore.Add((FieldIdentifier)err.ValidationContext.Items[_validateObjectOwnerKey]!, err.ValidationResult);
+            var modelType = modelIdentyfier.ModelOwner?.Model.GetType();
+            var model = modelType?.GetProperty(memberName)?.GetValue(modelIdentyfier.ModelOwner?.Model)
+                ?? modelType?.GetField(memberName)?.GetValue(modelIdentyfier.ModelOwner?.Model);
+            validationResultStore.Add(model is not null ? new FieldIdentifier(model, memberName, modelIdentyfier.ModelOwner) : modelIdentyfier, err.ValidationResult);
         }
     }
 

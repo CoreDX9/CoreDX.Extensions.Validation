@@ -12,13 +12,13 @@ namespace CoreDX.Extensions.AspNetCore.Mvc.ModelBinding.Validation;
 public partial class AsyncParamterBinder : ParameterBinder
 {
     private readonly IModelMetadataProvider _modelMetadataProvider;
-    private readonly IAsyncObjectModelValidator _asyncValidator;
+    private readonly IAsyncObjectModelValidator _asyncObjectModelValidator;
 
     /// <inheritdoc/>
     public AsyncParamterBinder(
         IModelMetadataProvider modelMetadataProvider,
         IModelBinderFactory modelBinderFactory,
-        IAsyncObjectModelValidator asyncValidator,
+        IAsyncObjectModelValidator asyncObjectModelValidator,
         IObjectModelValidator validator,
         IOptions<MvcOptions> mvcOptions,
         ILoggerFactory loggerFactory
@@ -31,7 +31,7 @@ public partial class AsyncParamterBinder : ParameterBinder
             loggerFactory: loggerFactory)
     {
         _modelMetadataProvider = modelMetadataProvider;
-        _asyncValidator = asyncValidator;
+        _asyncObjectModelValidator = asyncObjectModelValidator;
     }
 
     /// <inheritdoc/>
@@ -90,25 +90,41 @@ public partial class AsyncParamterBinder : ParameterBinder
 
         var modelBindingResult = modelBindingContext.Result;
 
-        Log.AttemptingToValidateParameterOrProperty(Logger, parameter, metadata);
+        if (_asyncObjectModelValidator is AsyncObjectModelValidator baseAsyncObjectValidator)
+        {
+            Log.AttemptingToValidateParameterOrProperty(Logger, parameter, metadata);
 
-        await EnforceBindRequiredAndValidateAsync(
-            _asyncValidator,
-            actionContext,
-            parameter,
-            metadata,
-            modelBindingContext,
-            modelBindingResult,
-            container,
-            cancellationToken: default); // why?!??!
+            await EnforceBindRequiredAndValidateAsync(
+                baseAsyncObjectValidator,
+                actionContext,
+                parameter,
+                metadata,
+                modelBindingContext,
+                modelBindingResult,
+                container);
 
-        Log.DoneAttemptingToValidateParameterOrProperty(Logger, parameter, metadata);
+            Log.DoneAttemptingToValidateParameterOrProperty(Logger, parameter, metadata);
+        }
+        else
+        {
+            // For legacy implementations (which directly implemented IObjectModelValidator), fall back to the
+            // back-compatibility logic. In this scenario, top-level validation attributes will be ignored like
+            // they were historically.
+            if (modelBindingResult.IsModelSet)
+            {
+                await _asyncObjectModelValidator.ValidateAsync(
+                    actionContext,
+                    modelBindingContext.ValidationState,
+                    modelBindingContext.ModelName,
+                    modelBindingResult.Model!);
+            }
+        }
 
         return modelBindingResult;
     }
 
     private async Task EnforceBindRequiredAndValidateAsync(
-        IAsyncObjectModelValidator validator,
+        AsyncObjectModelValidator baseAsyncObjectValidator,
         ActionContext actionContext,
         ParameterDescriptor parameter,
         ModelMetadata metadata,
@@ -130,11 +146,13 @@ public partial class AsyncParamterBinder : ParameterBinder
         else if (modelBindingResult.IsModelSet)
         {
             // Enforce any other validation rules
-            await validator.ValidateAsync(
+            await baseAsyncObjectValidator.ValidateAsync(
                 actionContext: actionContext,
                 validationState: modelBindingContext.ValidationState,
                 prefix: modelBindingContext.ModelName,
-                model: modelBindingResult.Model!,
+                model: modelBindingResult.Model,
+                metadata: metadata,
+                container: container,
                 cancellationToken: cancellationToken);
         }
         else if (metadata.IsRequired)
@@ -159,10 +177,10 @@ public partial class AsyncParamterBinder : ParameterBinder
             }
 
             // Run validation, we expect this to validate [Required].
-            await validator.ValidateAsync(actionContext: actionContext,
+            await baseAsyncObjectValidator.ValidateAsync(actionContext: actionContext,
                 validationState: modelBindingContext.ValidationState,
                 prefix: modelName,
-                model: modelBindingResult.Model!,
+                model: modelBindingResult.Model,
                 cancellationToken: cancellationToken);
         }
     }

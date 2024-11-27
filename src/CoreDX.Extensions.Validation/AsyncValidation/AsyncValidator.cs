@@ -51,7 +51,7 @@ public static class AsyncValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static async Task<bool> TryValidateProperty(
+    public static async ValueTask<bool> TryValidateProperty(
         object? value,
         ValidationContext validationContext,
         ICollection<ValidationResult>? validationResults,
@@ -102,7 +102,7 @@ public static class AsyncValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static Task<bool> TryValidateObject(
+    public static ValueTask<bool> TryValidateObject(
         object instance,
         ValidationContext validationContext,
         ICollection<ValidationResult>? validationResults,
@@ -141,7 +141,7 @@ public static class AsyncValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static async Task<bool> TryValidateObject(
+    public static async ValueTask<bool> TryValidateObject(
         object instance,
         ValidationContext validationContext,
         ICollection<ValidationResult>? validationResults,
@@ -198,7 +198,7 @@ public static class AsyncValidator
     /// <param name="validationAttributes">The list of <see cref="ValidationAttribute"/>s to validate this <paramref name="value"/> against.</param>
     /// <param name="cancellationToken"></param>
     /// <returns><c>true</c> if the object is valid, <c>false</c> if any validation errors are encountered.</returns>
-    public static async Task<bool> TryValidateValue(
+    public static async ValueTask<bool> TryValidateValue(
         object? value,
         ValidationContext validationContext,
         ICollection<ValidationResult>? validationResults,
@@ -234,7 +234,7 @@ public static class AsyncValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static async Task ValidateProperty(
+    public static async ValueTask ValidateProperty(
         object? value,
         ValidationContext validationContext,
         CancellationToken cancellationToken = default)
@@ -269,7 +269,7 @@ public static class AsyncValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static Task ValidateObject(
+    public static ValueTask ValidateObject(
         object instance,
         ValidationContext validationContext,
         CancellationToken cancellationToken = default)
@@ -294,7 +294,7 @@ public static class AsyncValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static async Task ValidateObject(
+    public static async ValueTask ValidateObject(
         object instance,
         ValidationContext validationContext,
         bool validateAllProperties,
@@ -336,7 +336,7 @@ public static class AsyncValidator
     /// <param name="cancellationToken"></param>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
     /// <exception cref="ValidationException">When <paramref name="value"/> is found to be invalid.</exception>
-    public static async Task ValidateValue(
+    public static async ValueTask ValidateValue(
         object? value,
         ValidationContext validationContext,
         IEnumerable<ValidationAttribute> validationAttributes,
@@ -440,7 +440,7 @@ public static class AsyncValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    private static async Task<List<ValidationError>> GetObjectValidationErrorsAsync(
+    private static async ValueTask<List<ValidationError>> GetObjectValidationErrorsAsync(
         object instance,
         ValidationContext validationContext,
         bool validateAllProperties,
@@ -529,7 +529,7 @@ public static class AsyncValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    private static async Task<List<ValidationError>> GetObjectPropertyValidationErrorsAsync(
+    private static async ValueTask<List<ValidationError>> GetObjectPropertyValidationErrorsAsync(
         object instance,
         ValidationContext validationContext,
         bool validateAllProperties,
@@ -617,7 +617,7 @@ public static class AsyncValidator
     /// <param name="cancellationToken"></param>
     /// <returns>The collection of validation errors.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
-    private static async Task<List<ValidationError>> GetValidationErrorsAsync(
+    private static async ValueTask<List<ValidationError>> GetValidationErrorsAsync(
         object? value,
         ValidationContext validationContext,
         IEnumerable<ValidationAttribute> attributes,
@@ -672,7 +672,7 @@ public static class AsyncValidator
     /// <param name="attribute">The validation attribute to test.</param>
     /// <param name="cancellationToken"></param>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
-    private static async Task<(bool success, ValidationError? error)> TryValidateAsync(
+    private static async ValueTask<(bool success, ValidationError? error)> TryValidateAsync(
         object? value,
         ValidationContext validationContext,
         ValidationAttribute attribute,

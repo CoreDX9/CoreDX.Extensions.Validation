@@ -15,28 +15,28 @@ namespace CoreDX.Extensions.Validation.Tests
         public static async Task TryValidateObjectThrowsIf_ValidationContext_is_null()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.TryValidateObject(new object(), validationContext: null, validationResults: null));
+                () => AsyncValidator.TryValidateObject(new object(), validationContext: null, validationResults: null).AsTask());
             
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.TryValidateObject(new object(), validationContext: null, validationResults: null, validateAllProperties: false));
+                () => AsyncValidator.TryValidateObject(new object(), validationContext: null, validationResults: null, validateAllProperties: false).AsTask());
         }
 
         [Fact]
         public static async Task TryValidateObjectThrowsIf_instance_is_null()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.TryValidateObject(null, s_estValidationContext, validationResults: null));
+                () => AsyncValidator.TryValidateObject(null, s_estValidationContext, validationResults: null).AsTask());
 
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.TryValidateObject(null, s_estValidationContext, validationResults: null, validateAllProperties: false));
+                () => AsyncValidator.TryValidateObject(null, s_estValidationContext, validationResults: null, validateAllProperties: false).AsTask());
         }
 
         // TryValidateObjectThrowsIf_instance_does_not_match_ValidationContext_ObjectInstance
         [Fact]
         public static async Task TestTryValidateObjectThrowsIfInstanceNotMatch()
         {
-            await AssertExtensions.ThrowsAsync<ArgumentException>("instance", () => AsyncValidator.TryValidateObject(new object(), s_estValidationContext, validationResults: null));
-            await AssertExtensions.ThrowsAsync<ArgumentException>("instance", () => AsyncValidator.TryValidateObject(new object(), s_estValidationContext, validationResults: null, validateAllProperties: true));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("instance", () => AsyncValidator.TryValidateObject(new object(), s_estValidationContext, validationResults: null).AsTask());
+            await AssertExtensions.ThrowsAsync<ArgumentException>("instance", () => AsyncValidator.TryValidateObject(new object(), s_estValidationContext, validationResults: null, validateAllProperties: true).AsTask());
         }
 
         [Fact]
@@ -273,7 +273,7 @@ namespace CoreDX.Extensions.Validation.Tests
 
             var validationResults = new List<ValidationResult>();
             var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => AsyncValidator.TryValidateObject(objectToBeValidated, validationContext, validationResults, true));
+                () => AsyncValidator.TryValidateObject(objectToBeValidated, validationContext, validationResults, true).AsTask());
             Assert.Equal("The associated metadata type for type 'CoreDX.Extensions.Validation.Tests.AsyncValidatorTests+HasMetadataTypeWithUnmatchedProperties' contains the following unknown properties or fields: SecondPropertyToBeTested. Please make sure that the names of these members match the names of the properties on the main type.",
                 exception.Message);
         }
@@ -353,27 +353,27 @@ namespace CoreDX.Extensions.Validation.Tests
         public static async Task ValidateObjectThrowsIf_ValidationContext_is_null()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.ValidateObject(new object(), validationContext: null));
+                () => AsyncValidator.ValidateObject(new object(), validationContext: null).AsTask());
 
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.ValidateObject(new object(), validationContext: null, validateAllProperties: false));
+                () => AsyncValidator.ValidateObject(new object(), validationContext: null, validateAllProperties: false).AsTask());
         }
 
         [Fact]
         public static async Task ValidateObjectThrowsIf_instance_is_null()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.ValidateObject(null, s_estValidationContext));
+                () => AsyncValidator.ValidateObject(null, s_estValidationContext).AsTask());
 
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.ValidateObject(null, s_estValidationContext, false));
+                () => AsyncValidator.ValidateObject(null, s_estValidationContext, false).AsTask());
         }
 
         [Fact]
         public static async Task ValidateObjectThrowsIf_instance_does_not_match_ValidationContext_ObjectInstance()
         {
-            await AssertExtensions.ThrowsAsync<ArgumentException>("instance", () => AsyncValidator.ValidateObject(new object(), s_estValidationContext));
-            await AssertExtensions.ThrowsAsync<ArgumentException>("instance", () => AsyncValidator.ValidateObject(new object(), s_estValidationContext, true));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("instance", () => AsyncValidator.ValidateObject(new object(), s_estValidationContext).AsTask());
+            await AssertExtensions.ThrowsAsync<ArgumentException>("instance", () => AsyncValidator.ValidateObject(new object(), s_estValidationContext, true).AsTask());
         }
 
         [Fact]
@@ -395,7 +395,7 @@ namespace CoreDX.Extensions.Validation.Tests
             };
             var validationContext = new ValidationContext(objectToBeValidated);
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true));
+                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true).AsTask());
             Assert.IsType<ValidValueStringPropertyAttribute>(exception.ValidationAttribute);
             Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", exception.ValidationResult.ErrorMessage);
             Assert.Equal("Invalid Value", exception.Value);
@@ -417,7 +417,7 @@ namespace CoreDX.Extensions.Validation.Tests
             var objectToBeValidated = new ToBeValidated() { PropertyWithRequiredAttribute = null };
             var validationContext = new ValidationContext(objectToBeValidated);
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true));
+                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true).AsTask());
             Assert.IsType<RequiredAttribute>(exception.ValidationAttribute);
             // cannot check error message - not defined on ret builds
             Assert.Null(exception.Value);
@@ -437,7 +437,7 @@ namespace CoreDX.Extensions.Validation.Tests
             var objectToBeValidated = new InvalidToBeValidated() { PropertyWithRequiredAttribute = "Valid Value" };
             var validationContext = new ValidationContext(objectToBeValidated);
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true));
+                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true).AsTask());
             Assert.IsType<ValidClassAttribute>(exception.ValidationAttribute);
             Assert.Equal(
                 "ValidClassAttribute.IsValid failed for class of type " + typeof(InvalidToBeValidated).FullName,
@@ -460,7 +460,7 @@ namespace CoreDX.Extensions.Validation.Tests
             var instance = new ValidatableError();
             var context = new ValidationContext(instance);
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateObject(instance, context));
+                () => AsyncValidator.ValidateObject(instance, context).AsTask());
             Assert.Equal("error", exception.ValidationResult.ErrorMessage);
         }
 
@@ -484,7 +484,7 @@ namespace CoreDX.Extensions.Validation.Tests
             TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
 
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true));
+                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true).AsTask());
             Assert.Equal("The SecondPropertyToBeTested field is required.", exception.ValidationResult.ErrorMessage);
         }
 
@@ -500,7 +500,7 @@ namespace CoreDX.Extensions.Validation.Tests
             TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
 
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true));
+                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true).AsTask());
             Assert.Equal("The field SecondPropertyToBeTested must be a string or array type with a maximum length of '11'.", exception.ValidationResult.ErrorMessage);
         }
 
@@ -516,7 +516,7 @@ namespace CoreDX.Extensions.Validation.Tests
             TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
 
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true));
+                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true).AsTask());
             Assert.Equal("The SecondPropertyToBeTested field mustn't be \"TypeInvalid\".", exception.ValidationResult.ErrorMessage);
         }
 
@@ -531,7 +531,7 @@ namespace CoreDX.Extensions.Validation.Tests
             TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeWithUnmatchedProperties), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeWithUnmatchedProperties));
 
             var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true));
+                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true).AsTask());
             Assert.Equal("The associated metadata type for type 'CoreDX.Extensions.Validation.Tests.AsyncValidatorTests+HasMetadataTypeWithUnmatchedProperties' contains the following unknown properties or fields: SecondPropertyToBeTested. Please make sure that the names of these members match the names of the properties on the main type.",
                 exception.Message);
         }
@@ -547,7 +547,7 @@ namespace CoreDX.Extensions.Validation.Tests
             TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
 
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true));
+                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true).AsTask());
             Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value",
                 exception.Message);
         }
@@ -563,7 +563,7 @@ namespace CoreDX.Extensions.Validation.Tests
             TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeWithComplementaryRequirements), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeWithComplementaryRequirements));
 
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true));
+                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true).AsTask());
             Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value",
                 exception.Message);
 
@@ -571,14 +571,14 @@ namespace CoreDX.Extensions.Validation.Tests
             objectToBeValidated.SecondPropertyToBeTested = "Not Phone #";
 
             exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true));
+                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true).AsTask());
             Assert.Equal("The SecondPropertyToBeTested field is not a valid phone number.",
                 exception.Message);
 
             objectToBeValidated.SecondPropertyToBeTested = "0800123456789";
 
             exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true));
+                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true).AsTask());
             Assert.Equal("The field SecondPropertyToBeTested must be a string or array type with a maximum length of '11'.",
                 exception.Message);
         }
@@ -594,7 +594,7 @@ namespace CoreDX.Extensions.Validation.Tests
             TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(SelfMetadataType), typeof(SelfMetadataType)), typeof(SelfMetadataType));
 
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true));
+                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true).AsTask());
             Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value",
                 exception.Message);
 
@@ -602,7 +602,7 @@ namespace CoreDX.Extensions.Validation.Tests
             objectToBeValidated.SecondPropertyToBeTested = "Not Phone #";
 
             exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true));
+                () => AsyncValidator.ValidateObject(objectToBeValidated, validationContext, true).AsTask());
             Assert.Equal("The SecondPropertyToBeTested field is not a valid phone number.",
                 exception.Message);
         }
@@ -615,14 +615,14 @@ namespace CoreDX.Extensions.Validation.Tests
         public static async Task TryValidatePropertyThrowsIf_ValidationContext_is_null()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.TryValidateProperty(new object(), validationContext: null, validationResults: null));
+                () => AsyncValidator.TryValidateProperty(new object(), validationContext: null, validationResults: null).AsTask());
         }
 
         [Fact]
         public static async Task TryValidatePropertyThrowsIf_value_is_null()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.TryValidateProperty(null, s_estValidationContext, validationResults: null));
+                () => AsyncValidator.TryValidateProperty(null, s_estValidationContext, validationResults: null).AsTask());
         }
 
         // TryValidatePropertyThrowsIf_ValidationContext_MemberName_is_null_or_empty()
@@ -632,11 +632,11 @@ namespace CoreDX.Extensions.Validation.Tests
             var validationContext = new ValidationContext(new ToBeValidated());
             validationContext.MemberName = null;
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.TryValidateProperty(null, validationContext, null));
+                () => AsyncValidator.TryValidateProperty(null, validationContext, null).AsTask());
 
             validationContext.MemberName = string.Empty;
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.TryValidateProperty(null, validationContext, null));
+                () => AsyncValidator.TryValidateProperty(null, validationContext, null).AsTask());
         }
 
         [Fact]
@@ -644,7 +644,7 @@ namespace CoreDX.Extensions.Validation.Tests
         {
             var validationContext = new ValidationContext(new ToBeValidated());
             validationContext.MemberName = "NonExist";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.TryValidateProperty(null, validationContext, null));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.TryValidateProperty(null, validationContext, null).AsTask());
         }
 
         [Fact]
@@ -652,13 +652,13 @@ namespace CoreDX.Extensions.Validation.Tests
         {
             var validationContext = new ValidationContext(new ToBeValidated());
             validationContext.MemberName = "InternalProperty";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.TryValidateProperty(null, validationContext, null));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.TryValidateProperty(null, validationContext, null).AsTask());
 
             validationContext.MemberName = "ProtectedProperty";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.TryValidateProperty(null, validationContext, null));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.TryValidateProperty(null, validationContext, null).AsTask());
 
             validationContext.MemberName = "PrivateProperty";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.TryValidateProperty(null, validationContext, null));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.TryValidateProperty(null, validationContext, null).AsTask());
         }
 
         [Fact]
@@ -666,7 +666,7 @@ namespace CoreDX.Extensions.Validation.Tests
         {
             var validationContext = new ValidationContext(new ToBeValidated());
             validationContext.MemberName = "Item";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.TryValidateProperty(null, validationContext, validationResults: null));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.TryValidateProperty(null, validationContext, validationResults: null).AsTask());
         }
 
         [Fact]
@@ -675,7 +675,7 @@ namespace CoreDX.Extensions.Validation.Tests
             var validationContext = new ValidationContext(new ToBeValidated());
 
             validationContext.MemberName = "NoAttributesProperty";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("value", () => AsyncValidator.TryValidateProperty(123, validationContext, validationResults: null));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("value", () => AsyncValidator.TryValidateProperty(123, validationContext, validationResults: null).AsTask());
         }
 
         [Fact]
@@ -685,11 +685,11 @@ namespace CoreDX.Extensions.Validation.Tests
 
             // cannot assign null to a non-value-type property
             validationContext.MemberName = "EnumProperty";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("value", () => AsyncValidator.TryValidateProperty(null, validationContext, validationResults: null));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("value", () => AsyncValidator.TryValidateProperty(null, validationContext, validationResults: null).AsTask());
 
             // cannot assign null to a non-nullable property
             validationContext.MemberName = "NonNullableProperty";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("value", () => AsyncValidator.TryValidateProperty(null, validationContext, validationResults: null));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("value", () => AsyncValidator.TryValidateProperty(null, validationContext, validationResults: null).AsTask());
         }
 
         [Fact]
@@ -849,14 +849,14 @@ namespace CoreDX.Extensions.Validation.Tests
         public static async Task ValidatePropertyThrowsIf_ValidationContext_is_null()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.ValidateProperty(new object(), validationContext: null));
+                () => AsyncValidator.ValidateProperty(new object(), validationContext: null).AsTask());
         }
 
         [Fact]
         public static async Task ValidatePropertyThrowsIf_value_is_null()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.ValidateProperty(null, s_estValidationContext));
+                () => AsyncValidator.ValidateProperty(null, s_estValidationContext).AsTask());
         }
 
         [Fact]
@@ -865,11 +865,11 @@ namespace CoreDX.Extensions.Validation.Tests
             var validationContext = new ValidationContext(new ToBeValidated());
             validationContext.MemberName = null;
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.ValidateProperty(null, validationContext));
+                () => AsyncValidator.ValidateProperty(null, validationContext).AsTask());
 
             validationContext.MemberName = string.Empty;
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.ValidateProperty(null, validationContext));
+                () => AsyncValidator.ValidateProperty(null, validationContext).AsTask());
         }
 
         [Fact]
@@ -877,7 +877,7 @@ namespace CoreDX.Extensions.Validation.Tests
         {
             var validationContext = new ValidationContext(new ToBeValidated());
             validationContext.MemberName = "NonExist";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.ValidateProperty(null, validationContext));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.ValidateProperty(null, validationContext).AsTask());
         }
 
         [Fact]
@@ -885,13 +885,13 @@ namespace CoreDX.Extensions.Validation.Tests
         {
             var validationContext = new ValidationContext(new ToBeValidated());
             validationContext.MemberName = "InternalProperty";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.ValidateProperty(null, validationContext));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.ValidateProperty(null, validationContext).AsTask());
 
             validationContext.MemberName = "ProtectedProperty";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.ValidateProperty(null, validationContext));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.ValidateProperty(null, validationContext).AsTask());
 
             validationContext.MemberName = "PrivateProperty";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.ValidateProperty(null, validationContext));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.ValidateProperty(null, validationContext).AsTask());
         }
 
         [Fact]
@@ -899,7 +899,7 @@ namespace CoreDX.Extensions.Validation.Tests
         {
             var validationContext = new ValidationContext(new ToBeValidated());
             validationContext.MemberName = "Item";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.ValidateProperty(null, validationContext));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("propertyName", () => AsyncValidator.ValidateProperty(null, validationContext).AsTask());
         }
 
         [Fact]
@@ -908,7 +908,7 @@ namespace CoreDX.Extensions.Validation.Tests
             var validationContext = new ValidationContext(new ToBeValidated());
 
             validationContext.MemberName = "NoAttributesProperty";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("value", () => AsyncValidator.ValidateProperty(123, validationContext));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("value", () => AsyncValidator.ValidateProperty(123, validationContext).AsTask());
         }
 
         [Fact]
@@ -918,11 +918,11 @@ namespace CoreDX.Extensions.Validation.Tests
 
             // cannot assign null to a non-value-type property
             validationContext.MemberName = "EnumProperty";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("value", () => AsyncValidator.ValidateProperty(null, validationContext));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("value", () => AsyncValidator.ValidateProperty(null, validationContext).AsTask());
 
             // cannot assign null to a non-nullable property
             validationContext.MemberName = "NonNullableProperty";
-            await AssertExtensions.ThrowsAsync<ArgumentException>("value", () => AsyncValidator.ValidateProperty(null, validationContext));
+            await AssertExtensions.ThrowsAsync<ArgumentException>("value", () => AsyncValidator.ValidateProperty(null, validationContext).AsTask());
         }
 
         [Fact]
@@ -947,7 +947,7 @@ namespace CoreDX.Extensions.Validation.Tests
             var validationContext = new ValidationContext(new ToBeValidated());
             validationContext.MemberName = "PropertyToBeTested";
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateProperty("Invalid Value", validationContext));
+                () => AsyncValidator.ValidateProperty("Invalid Value", validationContext).AsTask());
             Assert.IsType<ValidValueStringPropertyAttribute>(exception.ValidationAttribute);
             Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", exception.ValidationResult.ErrorMessage);
             Assert.Equal("Invalid Value", exception.Value);
@@ -959,7 +959,7 @@ namespace CoreDX.Extensions.Validation.Tests
             var validationContext = new ValidationContext(new ToBeValidated());
             validationContext.MemberName = "PropertyWithRequiredAttribute";
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateProperty(null, validationContext));
+                () => AsyncValidator.ValidateProperty(null, validationContext).AsTask());
             Assert.IsType<RequiredAttribute>(exception.ValidationAttribute);
             // cannot check error message - not defined on ret builds
             Assert.Null(exception.Value);
@@ -980,7 +980,7 @@ namespace CoreDX.Extensions.Validation.Tests
             validationContext.MemberName = "SecondPropertyToBeTested";
             TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateProperty(null, validationContext));
+                () => AsyncValidator.ValidateProperty(null, validationContext).AsTask());
             Assert.IsType<RequiredAttribute>(exception.ValidationAttribute);
             Assert.Null(exception.Value);
         }
@@ -992,7 +992,7 @@ namespace CoreDX.Extensions.Validation.Tests
             validationContext.MemberName = "SecondPropertyToBeTested";
             TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateProperty("Invalid Value", validationContext));
+                () => AsyncValidator.ValidateProperty("Invalid Value", validationContext).AsTask());
             Assert.IsType<MaxLengthAttribute>(exception.ValidationAttribute);
             Assert.Equal("The field SecondPropertyToBeTested must be a string or array type with a maximum length of '11'.", exception.ValidationResult.ErrorMessage);
         }
@@ -1004,7 +1004,7 @@ namespace CoreDX.Extensions.Validation.Tests
             validationContext.MemberName = "PropertyToBeTested";
             TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateProperty("Invalid Value", validationContext));
+                () => AsyncValidator.ValidateProperty("Invalid Value", validationContext).AsTask());
             Assert.IsType<ValidValueStringPropertyAttribute>(exception.ValidationAttribute);
             Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", exception.ValidationResult.ErrorMessage);
             Assert.Equal("Invalid Value", exception.Value);
@@ -1017,20 +1017,20 @@ namespace CoreDX.Extensions.Validation.Tests
             validationContext.MemberName = "PropertyToBeTested";
             TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeWithComplementaryRequirements), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeWithComplementaryRequirements));
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateProperty("Invalid Value", validationContext));
+                () => AsyncValidator.ValidateProperty("Invalid Value", validationContext).AsTask());
             Assert.IsType<ValidValueStringPropertyAttribute>(exception.ValidationAttribute);
             Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", exception.ValidationResult.ErrorMessage);
             Assert.Equal("Invalid Value", exception.Value);
 
             validationContext.MemberName = "SecondPropertyToBeTested";
             exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateProperty("Not Phone #", validationContext));
+                () => AsyncValidator.ValidateProperty("Not Phone #", validationContext).AsTask());
             Assert.IsType<PhoneAttribute>(exception.ValidationAttribute);
             Assert.Equal("The SecondPropertyToBeTested field is not a valid phone number.", exception.ValidationResult.ErrorMessage);
             Assert.Equal("Not Phone #", exception.Value);
 
             exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateProperty("0800123456789", validationContext));
+                () => AsyncValidator.ValidateProperty("0800123456789", validationContext).AsTask());
             Assert.IsType<MaxLengthAttribute>(exception.ValidationAttribute);
             Assert.Equal("The field SecondPropertyToBeTested must be a string or array type with a maximum length of '11'.", exception.ValidationResult.ErrorMessage);
             Assert.Equal("0800123456789", exception.Value);
@@ -1043,14 +1043,14 @@ namespace CoreDX.Extensions.Validation.Tests
             validationContext.MemberName = "PropertyToBeTested";
             TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(SelfMetadataType), typeof(SelfMetadataType)), typeof(SelfMetadataType));
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateProperty("Invalid Value", validationContext));
+                () => AsyncValidator.ValidateProperty("Invalid Value", validationContext).AsTask());
             Assert.IsType<ValidValueStringPropertyAttribute>(exception.ValidationAttribute);
             Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", exception.ValidationResult.ErrorMessage);
             Assert.Equal("Invalid Value", exception.Value);
 
             validationContext.MemberName = "SecondPropertyToBeTested";
             exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateProperty("Invalid Value", validationContext));
+                () => AsyncValidator.ValidateProperty("Invalid Value", validationContext).AsTask());
             Assert.IsType<PhoneAttribute>(exception.ValidationAttribute);
             Assert.Equal("The SecondPropertyToBeTested field is not a valid phone number.", exception.ValidationResult.ErrorMessage);
             Assert.Equal("Invalid Value", exception.Value);
@@ -1065,7 +1065,7 @@ namespace CoreDX.Extensions.Validation.Tests
         {
             await Assert.ThrowsAsync<ArgumentNullException>(
                 () => AsyncValidator.TryValidateValue(new object(),
-                    validationContext: null, validationResults: null, validationAttributes: Enumerable.Empty<ValidationAttribute>()));
+                    validationContext: null, validationResults: null, validationAttributes: Enumerable.Empty<ValidationAttribute>()).AsTask());
         }
 
         [Fact]
@@ -1074,7 +1074,7 @@ namespace CoreDX.Extensions.Validation.Tests
             var validationContext = new ValidationContext(new ToBeValidated());
             validationContext.MemberName = null;
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.TryValidateValue(new object(), validationContext, validationResults: null, validationAttributes: null));
+                () => AsyncValidator.TryValidateValue(new object(), validationContext, validationResults: null, validationAttributes: null).AsTask());
         }
 
         [Fact]
@@ -1178,7 +1178,7 @@ namespace CoreDX.Extensions.Validation.Tests
         {
             await Assert.ThrowsAsync<ArgumentNullException>(
                 () => AsyncValidator.ValidateValue(new object(),
-                    validationContext: null, validationAttributes: Enumerable.Empty<ValidationAttribute>()));
+                    validationContext: null, validationAttributes: Enumerable.Empty<ValidationAttribute>()).AsTask());
         }
 
         [Fact]
@@ -1187,7 +1187,7 @@ namespace CoreDX.Extensions.Validation.Tests
             var validationContext = new ValidationContext(new ToBeValidated());
             validationContext.MemberName = null;
             await Assert.ThrowsAsync<ArgumentNullException>(
-                () => AsyncValidator.ValidateValue(new object(), validationContext, validationAttributes: null));
+                () => AsyncValidator.ValidateValue(new object(), validationContext, validationAttributes: null).AsTask());
         }
 
         [Fact]
@@ -1207,7 +1207,7 @@ namespace CoreDX.Extensions.Validation.Tests
             validationContext.MemberName = "PropertyWithRequiredAttribute";
             var attributesToValidate = new ValidationAttribute[] { new RequiredAttribute(), new ValidValueStringPropertyAttribute() };
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateValue(null, validationContext, attributesToValidate));
+                () => AsyncValidator.ValidateValue(null, validationContext, attributesToValidate).AsTask());
             Assert.IsType<RequiredAttribute>(exception.ValidationAttribute);
             // cannot check error message - not defined on ret builds
             Assert.Null(exception.Value);
@@ -1221,7 +1221,7 @@ namespace CoreDX.Extensions.Validation.Tests
             validationContext.MemberName = "PropertyWithRequiredAttribute";
             var attributesToValidate = new ValidationAttribute[] { new RequiredAttribute(), new ValidValueStringPropertyAttribute() };
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateValue("Invalid Value", validationContext, attributesToValidate));
+                () => AsyncValidator.ValidateValue("Invalid Value", validationContext, attributesToValidate).AsTask());
             Assert.IsType<ValidValueStringPropertyAttribute>(exception.ValidationAttribute);
             Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", exception.ValidationResult.ErrorMessage);
             Assert.Equal("Invalid Value", exception.Value);
@@ -1244,7 +1244,7 @@ namespace CoreDX.Extensions.Validation.Tests
             validationContext.MemberName = "PropertyWithRequiredAttribute";
             var attributesToValidate = new ValidationAttribute[] { new ValidValueStringPropertyAttribute() };
             var exception = await Assert.ThrowsAsync<ValidationException>(
-                () => AsyncValidator.ValidateValue("Invalid Value", validationContext, attributesToValidate));
+                () => AsyncValidator.ValidateValue("Invalid Value", validationContext, attributesToValidate).AsTask());
             Assert.IsType<ValidValueStringPropertyAttribute>(exception.ValidationAttribute);
             Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", exception.ValidationResult.ErrorMessage);
             Assert.Equal("Invalid Value", exception.Value);
@@ -1266,7 +1266,7 @@ namespace CoreDX.Extensions.Validation.Tests
             validationContext.MemberName = "PropertyToBeTested";
             var attributesToValidate = new ValidationAttribute[] { new NotImplementedAsyncValidationAttribute() };
             var exception = await Assert.ThrowsAsync<NotImplementedException>(
-                () => AsyncValidator.ValidateValue("Value", validationContext, attributesToValidate));
+                () => AsyncValidator.ValidateValue("Value", validationContext, attributesToValidate).AsTask());
             Assert.Equal("IsValidAsync(object value, CancellationToken cancellationToken) has not been implemented by this class.  The preferred entry point is GetValidationResultAsync() and classes should override IsValidAsync(object value, ValidationContext context, CancellationToken cancellationToken).", exception.Message);
         }
 

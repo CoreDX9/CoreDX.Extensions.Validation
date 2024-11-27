@@ -41,7 +41,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static Task<bool> TryValidatePropertyAsync(
+    public static ValueTask<bool> TryValidatePropertyAsync(
         object? value,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
@@ -77,7 +77,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static Task<bool> TryValidatePropertyAsync(
+    public static ValueTask<bool> TryValidatePropertyAsync(
         object? value,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
@@ -122,7 +122,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
-    private static async Task<bool> TryValidatePropertyAsync(
+    private static async ValueTask<bool> TryValidatePropertyAsync(
         object? value,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
@@ -196,7 +196,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static Task<bool> TryValidateObjectAsync(
+    public static ValueTask<bool> TryValidateObjectAsync(
         object instance,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
@@ -229,7 +229,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static Task<bool> TryValidateObjectAsync(
+    public static ValueTask<bool> TryValidateObjectAsync(
         object instance,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
@@ -262,7 +262,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static Task<bool> TryValidateObjectAsync(
+    public static ValueTask<bool> TryValidateObjectAsync(
         object instance,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
@@ -309,7 +309,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static async Task<bool> TryValidateObjectAsync(
+    public static async ValueTask<bool> TryValidateObjectAsync(
         object instance,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
@@ -335,11 +335,11 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static Task ValidatePropertyAsync(
+    public static async ValueTask ValidatePropertyAsync(
         object? value,
         ValidationContext validationContext,
         CancellationToken cancellationToken = default)
-        => TryValidatePropertyAsync(value, validationContext, validationResults: null, predicate: null, throwOnFirstError: true, cancellationToken);
+        => await TryValidatePropertyAsync(value, validationContext, validationResults: null, predicate: null, throwOnFirstError: true, cancellationToken);
 
     /// <summary>
     /// Throws a <see cref="ValidationException"/> if the given property <paramref name="value"/> is not valid.
@@ -353,7 +353,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static Task ValidatePropertyAsync(
+    public static async ValueTask ValidatePropertyAsync(
         object? value,
         ValidationContext validationContext,
         Func<Type, bool> predicate,
@@ -364,7 +364,7 @@ public static partial class ObjectGraphValidator
             throw new ArgumentNullException(nameof(predicate));
         }
 
-        return TryValidatePropertyAsync(value, validationContext, validationResults: null, predicate, throwOnFirstError: true, cancellationToken);
+        await TryValidatePropertyAsync(value, validationContext, validationResults: null, predicate, throwOnFirstError: true, cancellationToken);
     }
 
     /// <summary>
@@ -384,7 +384,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static Task ValidateObjectAsync(
+    public static ValueTask ValidateObjectAsync(
         object instance,
         ValidationContext validationContext,
         CancellationToken cancellationToken = default)
@@ -408,7 +408,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static Task ValidateObjectAsync(
+    public static ValueTask ValidateObjectAsync(
         object instance,
         ValidationContext validationContext,
         Func<Type, bool> predicate,
@@ -440,7 +440,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static Task ValidateObjectAsync(
+    public static ValueTask ValidateObjectAsync(
         object instance,
         ValidationContext validationContext,
         bool validateAllProperties,
@@ -467,7 +467,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    public static Task ValidateObjectAsync(
+    public static async ValueTask ValidateObjectAsync(
         object instance,
         ValidationContext validationContext,
         bool validateAllProperties,
@@ -476,7 +476,7 @@ public static partial class ObjectGraphValidator
     {
         validationContext.Items.Add(_validatedObjectsKey, new HashSet<object>());
         validationContext.Items.Add(_validateObjectOwnerKey, null);
-        return TryValidateObjectRecursiveAsync(instance, validationContext, validationResults: null, validateAllProperties, predicate, throwOnFirstError: true, cancellationToken);
+        await TryValidateObjectRecursiveAsync(instance, validationContext, validationResults: null, validateAllProperties, predicate, throwOnFirstError: true, cancellationToken);
     }
 
     /// <summary>
@@ -496,7 +496,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    private static async Task<List<ValidationError>> GetObjectValidationErrorsAsync(
+    private static async ValueTask<List<ValidationError>> GetObjectValidationErrorsAsync(
         object instance,
         ValidationContext validationContext,
         bool validateAllProperties,
@@ -591,7 +591,7 @@ public static partial class ObjectGraphValidator
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
 #endif
-    private static async Task<List<ValidationError>> GetObjectPropertyValidationErrorsAsync(
+    private static async ValueTask<List<ValidationError>> GetObjectPropertyValidationErrorsAsync(
         object instance,
         ValidationContext validationContext,
         bool validateAllProperties,
@@ -657,7 +657,7 @@ public static partial class ObjectGraphValidator
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>The collection of validation errors.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
-    private static async Task<List<ValidationError>> GetValidationErrorsAsync(
+    private static async ValueTask<List<ValidationError>> GetValidationErrorsAsync(
         object? value,
         ValidationContext validationContext,
         IEnumerable<ValidationAttribute> attributes,
@@ -741,7 +741,7 @@ public static partial class ObjectGraphValidator
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
     /// <exception cref="ArgumentException">When <paramref name="instance"/> doesn't match the
     /// <see cref="ValidationContext.ObjectInstance"/>on <paramref name="validationContext"/>.</exception>
-    private static async Task<bool> TryValidateObjectRecursiveAsync(
+    private static async ValueTask<bool> TryValidateObjectRecursiveAsync(
         object instance,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
@@ -825,7 +825,7 @@ public static partial class ObjectGraphValidator
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
     /// <exception cref="ArgumentException">When <paramref name="instance"/> doesn't match the
     /// <see cref="ValidationContext.ObjectInstance"/>on <paramref name="validationContext"/>.</exception>
-    private static async Task<bool> TryValidatePropertyObjectsAsync(
+    private static async ValueTask<bool> TryValidatePropertyObjectsAsync(
         object instance,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
@@ -934,7 +934,7 @@ public static partial class ObjectGraphValidator
     /// <param name="attribute">The validation attribute to test.</param>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
-    private static async Task<(bool success, ValidationError? error)> TryValidateAsync(
+    private static async ValueTask<(bool success, ValidationError? error)> TryValidateAsync(
         object? value,
         ValidationContext validationContext,
         ValidationAttribute attribute,

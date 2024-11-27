@@ -52,16 +52,17 @@ internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrate
             else
             {
 #pragma warning disable CS8602 // 解引用可能出现空引用。
+                //_modelMetadata.ThrowIfRecordTypeHasValidationOnProperties();
                 _modelMetadata.GetType().GetMethod("ThrowIfRecordTypeHasValidationOnProperties", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
                     .Invoke(modelMetadata, null);
 #pragma warning restore CS8602 // 解引用可能出现空引用。
 
-                //_modelMetadata.ThrowIfRecordTypeHasValidationOnProperties();
                 _parameters = _modelMetadata.BoundConstructor.BoundConstructorParameters!;
             }
 
 #pragma warning disable CS8602 // 解引用可能出现空引用。
 #pragma warning disable CS8601 // 引用类型赋值可能为 null。
+            //_properties = _modelMetadata.BoundProperties;
             _properties = _modelMetadata.GetType().GetProperty("BoundProperties", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
                 .GetValue(modelMetadata) as IReadOnlyList<ModelMetadata>;
 #pragma warning restore CS8601 // 引用类型赋值可能为 null。
@@ -97,6 +98,7 @@ internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrate
                 else
                 {
 #pragma warning disable CS8602 // 解引用可能出现空引用。
+                    //_modelMetadata.BoundConstructorParameterMapping
                     var parametersPerProperty = _modelMetadata.GetType().GetProperty("BoundConstructorParameterMapping", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
                         .GetValue(_modelMetadata) as IReadOnlyDictionary<ModelMetadata, ModelMetadata>;
 
@@ -138,11 +140,9 @@ internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrate
             throw new NotImplementedException();
         }
 
-        private static object GetModel(object container, ModelMetadata property)
+        private static object? GetModel(object container, ModelMetadata property)
         {
-#pragma warning disable CS8603 // 可能返回 null 引用。
             return property.PropertyGetter!(container);
-#pragma warning restore CS8603 // 可能返回 null 引用。
         }
     }
 }

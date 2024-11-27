@@ -127,16 +127,6 @@ public static class AsyncValidatiorExtension
         string? prefix,
         CancellationToken cancellationToken = default)
     {
-        if (controller is null)
-        {
-            throw new ArgumentNullException(nameof(controller));
-        }
-
-        if (model is null)
-        {
-            throw new ArgumentNullException(nameof(model));
-        }
-
         await TryValidateModelAsync(
             controller.ControllerContext,
             model: model,
@@ -175,16 +165,6 @@ public static class AsyncValidatiorExtension
         string? prefix,
         CancellationToken cancellationToken = default)
     {
-        if (page is null)
-        {
-            throw new ArgumentNullException(nameof(page));
-        }
-
-        if (model is null)
-        {
-            throw new ArgumentNullException(nameof(model));
-        }
-
         await TryValidateModelAsync(
             page.PageContext,
             model: model,
@@ -208,15 +188,8 @@ public static class AsyncValidatiorExtension
         string? prefix,
         CancellationToken cancellationToken = default)
     {
-        if (context is null)
-        {
-            throw new ArgumentNullException(nameof(context));
-        }
-
-        if (model is null)
-        {
-            throw new ArgumentNullException(nameof(model));
-        }
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(model);
 
         var validator = context.HttpContext.RequestServices.GetRequiredService<IAsyncObjectModelValidator>();
 

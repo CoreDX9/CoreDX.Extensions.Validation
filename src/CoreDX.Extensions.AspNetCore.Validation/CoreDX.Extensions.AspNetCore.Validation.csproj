@@ -4,15 +4,14 @@
     <TargetFrameworks>net9.0;net8.0;net7.0;net6.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageVersion>1.2.0</PackageVersion>
+    <PackageVersion>1.2.1</PackageVersion>
     <PackageTags>ModelValidation AsyncModelValidation</PackageTags>
     <Description>Model binder with async model validation services for ASP.NET Core MVC.</Description>
     <Title>ASP.NET Core MVC model binder with async model validation services.</Title>
     <PackageReleaseNotes>
-      fix: Extension method TryValidateAsync throws exception.
-      fix: Sync ValidationAttribute is ignored.
-      fix: IValidatableObject is ignored.
-      add: Add IAsyncValidatableObject support.
+      refactoring: Clean up synchronous validation code from asynchronous validators.
+      refactoring: Rename extension method IMvcBuilder.AddAsyncValidation to IMvcBuilder.AddAsyncDataAnnotations.
+      add: Add IMvcCoreBuilder support.
     </PackageReleaseNotes>
   </PropertyGroup>
     

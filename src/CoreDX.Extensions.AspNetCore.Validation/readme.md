@@ -7,7 +7,13 @@ Add async model validation services for Microsoft Asp.Net Core MVC.
 ``` csharp
 services
     .AddMvc()
-    .AddAsyncValidation();
+    .AddAsyncDataAnnotations();
+
+// Or
+services
+    .AddMvcCore()
+    .AddDataAnnotations();
+    .AddAsyncDataAnnotations();
 ```
 
 2. MVC and Razor pages
@@ -18,6 +24,7 @@ public class MyController : ControllerBase
 {
     public async Task Post(CustomModel input)
     {
+        // TryValidateModel(input) // This will ignore async validation attributes.
         await this.TryValidateModelAsync(input);
     }
 }
@@ -28,6 +35,7 @@ public class MyModel : PageModel
 
     public async Task OnPostAsync()
     {
+        // TryValidateModel(Input) // This will ignore async validation attributes.
         await this.TryValidateModelAsync(Input);
     }
 }

@@ -67,26 +67,27 @@ public sealed class AsyncDataAnnotationsModelValidatorProvider : IMetadataBasedM
                 continue;
             }
 
-            if (validatorItem.ValidatorMetadata is not ValidationAttribute attribute)
+            if (validatorItem.ValidatorMetadata is not AsyncValidationAttribute asyncAttribute)
             {
                 continue;
             }
 
             var validator = new AsyncDataAnnotationsModelValidator(
                 _validationAttributeAdapterProvider,
-                attribute,
+                asyncAttribute,
                 stringLocalizer);
 
             validatorItem.Validator = validator;
             validatorItem.IsReusable = true;
 
-            // Inserts validators based on whether or not they are 'required'. We want to run
-            // 'required' validators first so that we get the best possible error message.
-            if (attribute is RequiredAttribute)
-            {
-                context.Results.Remove(validatorItem);
-                context.Results.Insert(0, validatorItem);
-            }
+            // NEVER TRUE
+            //// Inserts validators based on whether or not they are 'required'. We want to run
+            //// 'required' validators first so that we get the best possible error message.
+            //if (asyncAttribute is RequiredAttribute)
+            //{
+            //    context.Results.Remove(validatorItem);
+            //    context.Results.Insert(0, validatorItem);
+            //}
         }
 
         // Produce a validator if the type supports IAsyncValidatableObject
@@ -95,15 +96,6 @@ public sealed class AsyncDataAnnotationsModelValidatorProvider : IMetadataBasedM
             context.Results.Add(new ValidatorItem
             {
                 Validator = new AsyncValidatableObjectAdapter(),
-                IsReusable = true
-            });
-        }
-        // Produce a validator if the type supports IValidatableObject
-        else if (typeof(IValidatableObject).IsAssignableFrom(context.ModelMetadata.ModelType))
-        {
-            context.Results.Add(new ValidatorItem
-            {
-                Validator = new ValidatableObjectAdapter(),
                 IsReusable = true
             });
         }
@@ -117,16 +109,11 @@ public sealed class AsyncDataAnnotationsModelValidatorProvider : IMetadataBasedM
             return true;
         }
 
-        if (typeof(IValidatableObject).IsAssignableFrom(modelType))
-        {
-            return true;
-        }
-
         // Read interface .Count once rather than per iteration
         var validatorMetadataCount = validatorMetadata.Count;
         for (var i = 0; i < validatorMetadataCount; i++)
         {
-            if (validatorMetadata[i] is ValidationAttribute)
+            if (validatorMetadata[i] is AsyncValidationAttribute)
             {
                 return true;
             }
@@ -171,7 +158,7 @@ internal class ValidatableObjectAdapter : IModelValidator
         return ConvertResults(validatable.Validate(validationContext));
     }
 
-    protected static IEnumerable<ModelValidationResult> ConvertResults(IEnumerable<ValidationResult> results)
+    private static IEnumerable<ModelValidationResult> ConvertResults(IEnumerable<ValidationResult> results)
     {
         foreach (var result in results)
         {
@@ -203,10 +190,10 @@ internal sealed class AsyncValidatableObjectAdapter : ValidatableObjectAdapter, 
             return Task.FromResult(Enumerable.Empty<ModelValidationResult>());
         }
 
-        if (!(model is IValidatableObject or IAsyncValidatableObject))
+        if (!(model is IAsyncValidatableObject asyncValidatable))
         {
             //var message = Resources.FormatValidatableObjectAdapter_IncompatibleType(
-            //    typeof(IValidatableObject).Name,
+            //    typeof(IAsyncValidatableObject).Name,
             //    model.GetType());
 
             throw new InvalidOperationException(/*message*/);
@@ -225,21 +212,10 @@ internal sealed class AsyncValidatableObjectAdapter : ValidatableObjectAdapter, 
             MemberName = context.ModelMetadata.Name,
         };
 
-        List<ModelValidationResult> results = [];
-        if (model is IValidatableObject validatable)
-        {
-            results.AddRange(ConvertResults(validatable.Validate(validationContext)));
-        }
-
-        if (model is IAsyncValidatableObject asyncValidatable)
-        {
-            results.AddRange(ConvertResults(asyncValidatable.ValidateAsync(validationContext, cancellationToken), cancellationToken).ToBlockingEnumerable(cancellationToken));
-        }
-
-        return Task.FromResult(results.AsEnumerable());
+        return Task.FromResult(ConvertResultsAsync(asyncValidatable.ValidateAsync(validationContext, cancellationToken), cancellationToken).ToBlockingEnumerable(cancellationToken));
     }
 
-    private static async IAsyncEnumerable<ModelValidationResult> ConvertResults(IAsyncEnumerable<ValidationResult> results, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    private static async IAsyncEnumerable<ModelValidationResult> ConvertResultsAsync(IAsyncEnumerable<ValidationResult> results, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await foreach (var result in results.WithCancellation(cancellationToken))
         {

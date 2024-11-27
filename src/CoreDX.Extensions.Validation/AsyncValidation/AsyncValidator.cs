@@ -150,7 +150,7 @@ public static class AsyncValidator
     {
         if (instance == null)
         {
-            throw new ArgumentNullException("instance");
+            throw new ArgumentNullException(nameof(instance));
         }
         if (validationContext is null)
         {
@@ -158,7 +158,7 @@ public static class AsyncValidator
         }
         if (instance != validationContext.ObjectInstance)
         {
-            throw new ArgumentException("InstanceMustMatchValidationContextInstance", "instance");
+            throw new ArgumentException("InstanceMustMatchValidationContextInstance", nameof(instance));
         }
 
         bool result = true;
@@ -344,7 +344,7 @@ public static class AsyncValidator
     {
         if (validationContext == null)
         {
-            throw new ArgumentNullException("validationContext");
+            throw new ArgumentNullException(nameof(validationContext));
         }
 
         if (validationAttributes is null)
@@ -375,7 +375,7 @@ public static class AsyncValidator
     {
         if (validationContext == null)
         {
-            throw new ArgumentNullException("validationContext");
+            throw new ArgumentNullException(nameof(validationContext));
         }
 
         // Create a new context using the existing ValidationContext that acts as an IServiceProvider and contains our existing items.
@@ -394,7 +394,7 @@ public static class AsyncValidator
     {
         if (destinationType == null)
         {
-            throw new ArgumentNullException("destinationType");
+            throw new ArgumentNullException(nameof(destinationType));
         }
 
         if (value == null)
@@ -419,7 +419,7 @@ public static class AsyncValidator
     {
         if (!CanBeAssigned(propertyType, value))
         {
-            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "Validator_Property_Value_Wrong_Type", propertyName, propertyType), nameof(value));
+            throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "The value for property '{0}' must be of type '{1}'.", propertyName, propertyType), nameof(value));
         }
     }
 
@@ -449,7 +449,7 @@ public static class AsyncValidator
     {
         if (validationContext == null)
         {
-            throw new ArgumentNullException("validationContext");
+            throw new ArgumentNullException(nameof(validationContext));
         }
 
         Debug.Assert(instance != null);

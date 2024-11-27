@@ -681,10 +681,10 @@ public static partial class ObjectGraphValidator
         RequiredAttribute? required = attributes.FirstOrDefault(a => a is RequiredAttribute) as RequiredAttribute;
         if (required != null)
         {
-            var result = await TryValidateAsync(value, validationContext, required, cancellationToken);
-            if (!result.success)
+            var (success, error) = await TryValidateAsync(value, validationContext, required, cancellationToken);
+            if (!success)
             {
-                errors.Add(result.error!);
+                errors.Add(error!);
                 return errors;
             }
         }
@@ -694,10 +694,10 @@ public static partial class ObjectGraphValidator
         {
             if (attr != required)
             {
-                var result = await TryValidateAsync(value, validationContext, attr, cancellationToken);
-                if (!result.success)
+                var (success, error) = await TryValidateAsync(value, validationContext, attr, cancellationToken);
+                if (!success)
                 {
-                    errors.Add(result.error!);
+                    errors.Add(error!);
 
                     if (breakOnFirstError)
                     {

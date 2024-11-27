@@ -94,7 +94,7 @@ public abstract class AsyncValidationAttribute : ValidationAttribute
         // The IsValid method without a validationContext predates the one accepting the context.
         // This is theoretically unreachable through normal use cases.
         // Instead, the overload using validationContext should be called.
-        return await IsValidAsync(value, null!) == ValidationResult.Success;
+        return await IsValidAsync(value, null!, cancellationToken: cancellationToken) == ValidationResult.Success;
     }
 
     /// <summary>

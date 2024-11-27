@@ -138,8 +138,12 @@ internal class ValidatableObjectAdapter : IModelValidator
             //var message = Resources.FormatValidatableObjectAdapter_IncompatibleType(
             //    typeof(IValidatableObject).Name,
             //    model.GetType());
+            var message = string.Format(
+                "The model object inside the metadata claimed to be compatible with '{0}', but was actually '{1}'.",
+                typeof(IValidatableObject).Name,
+                model.GetType());
 
-            throw new InvalidOperationException(/*message*/);
+            throw new InvalidOperationException(message);
         }
 
         // The constructed ValidationContext is intentionally slightly different from what
@@ -195,8 +199,12 @@ internal sealed class AsyncValidatableObjectAdapter : ValidatableObjectAdapter, 
             //var message = Resources.FormatValidatableObjectAdapter_IncompatibleType(
             //    typeof(IAsyncValidatableObject).Name,
             //    model.GetType());
+            var message = string.Format(
+                "The model object inside the metadata claimed to be compatible with '{0}', but was actually '{1}'.",
+                typeof(IValidatableObject).Name,
+                model.GetType());
 
-            throw new InvalidOperationException(/*message*/);
+            throw new InvalidOperationException(message);
         }
 
         // The constructed ValidationContext is intentionally slightly different from what

@@ -12,7 +12,7 @@ services
 // Or
 services
     .AddMvcCore()
-    .AddDataAnnotations();
+    .AddDataAnnotations()
     .AddAsyncDataAnnotations();
 ```
 

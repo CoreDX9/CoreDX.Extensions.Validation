@@ -17,7 +17,6 @@ using System.Diagnostics.CodeAnalysis;
 #endif
 using System.Globalization;
 using System.Numerics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace CoreDX.Extensions.ComponentModel.DataAnnotations;
@@ -662,12 +661,6 @@ public static partial class ObjectGraphValidator
 
         Debug.Assert(instance != null);
 
-        if (!(validationContext.Items.TryGetValue(_validatedObjectsKey, out var item) && item is HashSet<object> visited && visited.Add(instance!)))
-        {
-            // Already visited this object.
-            return [];
-        }
-
         // Step 1: Validate the object properties' validation attributes
         List<ValidationError> errors = GetObjectPropertyValidationErrors(instance!, validationContext, validateAllProperties, breakOnFirstError);
 
@@ -730,12 +723,6 @@ public static partial class ObjectGraphValidator
 
         foreach (KeyValuePair<ValidationContext, object?> property in properties)
         {
-            //if (property.Value != null && !(validationContext.Items.TryGetValue(_validatedObjectsKey, out var item) && item is HashSet<object> visited && visited.Add(property.Value)))
-            //{
-            //    // Already visited this object.
-            //    return [];
-            //}
-
             // get list of all validation attributes for this property
             IEnumerable<ValidationAttribute> attributes = _store.GetPropertyValidationAttributes(property.Key);
 
@@ -786,12 +773,21 @@ public static partial class ObjectGraphValidator
         List<KeyValuePair<ValidationContext, object?>> items = new List<KeyValuePair<ValidationContext, object?>>(properties.Count);
         foreach (PropertyDescriptor property in properties)
         {
-            ValidationContext context = CreateValidationContext(instance, validationContext, new FieldIdentifier(instance, property.Name, (FieldIdentifier?)validationContext.Items[_validateObjectOwnerKey]));
+            ValidationContext context = CreateValidationContext(
+                instance,
+                validationContext,
+                instanceOwner: new FieldIdentifier(
+                    instance,
+                    property.Name,
+                    (FieldIdentifier?)validationContext.Items[_validateObjectOwnerKey]
+                )
+            );
+
             context.MemberName = property.Name;
 
             if (_store.GetPropertyValidationAttributes(context).Any())
             {
-                items.Add(new KeyValuePair<ValidationContext, object?>(context, property.GetValue(instance)!));
+                items.Add(new KeyValuePair<ValidationContext, object?>(context, property.GetValue(instance)));
             }
         }
         return items;
@@ -816,10 +812,18 @@ public static partial class ObjectGraphValidator
         foreach (PropertyDescriptor property in properties)
         {
             if (property.GetValue(instance) is object propertyObject
-                && (validationContext.Items.TryGetValue(_validatedObjectsKey, out var item) && item is HashSet<object> visited && !visited.Contains(propertyObject))
                 && IsValidatableType(property.PropertyType, predicate))
             {
-                ValidationContext context = CreateValidationContext(propertyObject, validationContext, new FieldIdentifier(instance, property.Name, (FieldIdentifier?)validationContext.Items[_validateObjectOwnerKey]));
+                ValidationContext context = CreateValidationContext(
+                    propertyObject,
+                    validationContext,
+                    instanceOwner: new FieldIdentifier(
+                        instance,
+                        property.Name,
+                        (FieldIdentifier?)validationContext.Items[_validateObjectOwnerKey]
+                    )
+                );
+
                 items.Add(new KeyValuePair<ValidationContext, object>(context, propertyObject));
             }
         }
@@ -878,12 +882,6 @@ public static partial class ObjectGraphValidator
         if (validationContext == null)
         {
             throw new ArgumentNullException(nameof(validationContext));
-        }
-
-        if (value != null && !(validationContext.Items.TryGetValue(_validatedObjectsKey, out var item) && item is HashSet<object> visited && visited.Add(value)))
-        {
-            // Already visited this object.
-            return [];
         }
 
         List<ValidationError> errors = new List<ValidationError>();
@@ -970,6 +968,13 @@ public static partial class ObjectGraphValidator
         if (instance != validationContext.ObjectInstance)
         {
             throw new ArgumentException("Validator_InstanceMustMatchValidationContextInstance", nameof(instance));
+        }
+
+        if (!(validationContext.Items.TryGetValue(_validatedObjectsKey, out var item)
+            && item is HashSet<object> visited
+            && visited.Add(instance)))
+        {
+            return true;
         }
 
         bool isValid = true;
@@ -1091,9 +1096,7 @@ public static partial class ObjectGraphValidator
         object? element)
     {
         if (element is null || !IsValidatableType(element.GetType(), predicate)) return true;
-        if (validationContext.Items.TryGetValue(_validatedObjectsKey, out var contextItem)
-            && contextItem is HashSet<object> visited
-            && visited.Contains(element)) return true;
+
         return TryValidateObjectRecursive(
             element,
             CreateValidationContext(
@@ -1128,12 +1131,6 @@ public static partial class ObjectGraphValidator
     {
         Debug.Assert(validationContext != null);
 
-        //if (value != null && !(validationContext.Items.TryGetValue(_validatedObjectsKey, out var item) && item is HashSet<object> visited && visited.Add(value)))
-        //{
-        //    // Already visited this object.
-        //    return (true, null);
-        //}
-
         var validationResult = attribute.GetValidationResult(value, validationContext);
         if (validationResult != ValidationResult.Success)
         {
@@ -1147,32 +1144,29 @@ public static partial class ObjectGraphValidator
 
     private static void TransferErrorToResult(ValidationResultStore validationResultStore, ValidationError err)
     {
-        // Transfer results to the ValidationResultStore
+        var modelIdentyfier = (FieldIdentifier)err.ValidationContext.Items[_validateObjectOwnerKey]!;
+
         if (!err.ValidationResult.MemberNames.Any())
         {
-            validationResultStore.Add((FieldIdentifier)err.ValidationContext.Items[_validateObjectOwnerKey]!, err.ValidationResult);
+            validationResultStore.Add(modelIdentyfier, err.ValidationResult);
             return;
         }
 
-        var modelIdentyfier = (FieldIdentifier)err.ValidationContext.Items[_validateObjectOwnerKey]!;
+        PropertyDescriptorCollection? properties = null;
         foreach (var memberName in err.ValidationResult.MemberNames)
         {
-            object? memberValue = null;
-            PropertyInfo? propertyInfo = null;
-            FieldInfo? fieldInfo = null;
-            var fieldType = modelIdentyfier.FieldOwner?.FieldValue?.GetType();
-            if (fieldType?.GetProperty(memberName) is PropertyInfo prop)
+            var resultModelIdentifier = modelIdentyfier;
+            if (memberName != modelIdentyfier.FieldName)
             {
-                propertyInfo = prop;
-                memberValue = propertyInfo.GetValue(modelIdentyfier.FieldOwner?.FieldValue);
-            }   
-            else if(fieldType?.GetField(memberName) is FieldInfo field)
-            {
-                fieldInfo = field;
-                memberValue = fieldInfo.GetValue(modelIdentyfier.FieldOwner?.FieldValue);
+                properties ??= TypeDescriptor.GetProperties(modelIdentyfier.Model);
+
+                if (properties.Find(memberName, false) is not null)
+                {
+                    resultModelIdentifier = new FieldIdentifier(modelIdentyfier.Model, memberName, modelIdentyfier.ModelOwner);
+                }
             }
 
-            validationResultStore.Add(propertyInfo is not null || fieldInfo is not null ? new FieldIdentifier(memberValue, memberName, modelIdentyfier.FieldOwner) : modelIdentyfier, err.ValidationResult);
+            validationResultStore.Add(resultModelIdentifier, err.ValidationResult);
         }
     }
 

@@ -15,10 +15,10 @@ public sealed class FieldIdentifier : IEquatable<FieldIdentifier>
     /// <summary>
     /// Initializes a new instance of the <see cref="FieldIdentifier"/> class.
     /// </summary>
-    /// <param name="fieldValue">The object that owns the field.</param>
+    /// <param name="model">The object that owns the field.</param>
     /// <param name="fieldName">The name of the editable field.</param>
     /// <param name="modelOwner">The object that owns the model.</param>
-    public FieldIdentifier(object? fieldValue, string fieldName, FieldIdentifier? modelOwner)
+    public FieldIdentifier(object model, string fieldName, FieldIdentifier? modelOwner)
     {
 
         //if (model.GetType().IsValueType)
@@ -26,25 +26,29 @@ public sealed class FieldIdentifier : IEquatable<FieldIdentifier>
         //    throw new ArgumentException("The model must be a reference-typed object.", nameof(model));
         //}
 
+        Model = model ?? throw new ArgumentNullException(nameof(model));
+
         // Note that we do allow an empty string. This is used by some validation systems
         // as a place to store object-level (not per-property) messages.
         FieldName = fieldName ?? throw new ArgumentNullException(nameof(fieldName));
-        FieldValue = fieldValue;
-        FieldOwner = modelOwner;
+        
+        ModelOwner = modelOwner;
     }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FieldIdentifier"/> class.
     /// </summary>
-    /// <param name="fieldValue">The object that owns the field.</param>
+    /// <param name="model">The object that owns the field.</param>
     /// <param name="enumerableElementIndex">The index of the element of enumerable field.</param>
     /// <param name="modelOwner">The object that owns the model.</param>
-    public FieldIdentifier(object? fieldValue, int enumerableElementIndex, FieldIdentifier? modelOwner)
+    public FieldIdentifier(object model, int enumerableElementIndex, FieldIdentifier? modelOwner)
     {
         //if (model.GetType().IsValueType)
         //{
         //    throw new ArgumentException("The model must be a reference-typed object.", nameof(model));
         //}
+
+        Model = model ?? throw new ArgumentNullException(nameof(model));
 
         if (enumerableElementIndex < 0)
         {
@@ -52,14 +56,14 @@ public sealed class FieldIdentifier : IEquatable<FieldIdentifier>
         }
 
         EnumerableElementIndex = enumerableElementIndex;
-        FieldValue = fieldValue;
-        FieldOwner = modelOwner;
+        
+        ModelOwner = modelOwner;
     }
 
     /// <summary>
     /// Gets the object that owns the editable field.
     /// </summary>
-    public object? FieldValue { get; }
+    public object Model { get; }
 
     /// <summary>
     /// Gets the name of the editable field.
@@ -72,18 +76,18 @@ public sealed class FieldIdentifier : IEquatable<FieldIdentifier>
     public int? EnumerableElementIndex { get; }
 
     /// <summary>
-    /// Gets the owner of the field.
+    /// Gets the owner of the model.
     /// </summary>
-    public FieldIdentifier? FieldOwner { get; }
+    public FieldIdentifier? ModelOwner { get; }
 
     /// <inheritdoc />
     public override int GetHashCode()
     {
         // We want to compare Model instances by reference. RuntimeHelpers.GetHashCode returns identical hashes for equal object references (ignoring any `Equals`/`GetHashCode` overrides) which is what we want.
-        var modelHash = RuntimeHelpers.GetHashCode(FieldValue);
+        var modelHash = RuntimeHelpers.GetHashCode(Model);
         var fieldHash = FieldName is null ? 0 : StringComparer.Ordinal.GetHashCode(FieldName);
         var indexHash = EnumerableElementIndex ?? 0;
-        var ownerHash = RuntimeHelpers.GetHashCode(FieldOwner);
+        var ownerHash = RuntimeHelpers.GetHashCode(ModelOwner);
         return (modelHash, fieldHash, indexHash, ownerHash).GetHashCode();
     }
 
@@ -95,10 +99,10 @@ public sealed class FieldIdentifier : IEquatable<FieldIdentifier>
     /// <inheritdoc />
     public bool Equals(FieldIdentifier? otherIdentifier)
     {
-        return ReferenceEquals(otherIdentifier?.FieldValue, FieldValue)
+        return (ReferenceEquals(otherIdentifier?.Model, Model) || Equals(otherIdentifier?.Model, Model))
             && string.Equals(otherIdentifier?.FieldName, FieldName, StringComparison.Ordinal)
             && Nullable.Equals(otherIdentifier?.EnumerableElementIndex, EnumerableElementIndex)
-            && ReferenceEquals(otherIdentifier?.FieldOwner, FieldOwner);
+            && ReferenceEquals(otherIdentifier?.ModelOwner, ModelOwner);
     }
 
     /// <inheritdoc/>
@@ -120,7 +124,7 @@ public sealed class FieldIdentifier : IEquatable<FieldIdentifier>
         do
         {
             sb.Insert(0, fieldIdentifier.FieldName is not null ? $".{fieldIdentifier.FieldName}" : $"[{fieldIdentifier.EnumerableElementIndex}]");
-            fieldIdentifier = fieldIdentifier.FieldOwner;
+            fieldIdentifier = fieldIdentifier.ModelOwner;
         } while (fieldIdentifier != null);
 
         sb.Insert(0, "$");

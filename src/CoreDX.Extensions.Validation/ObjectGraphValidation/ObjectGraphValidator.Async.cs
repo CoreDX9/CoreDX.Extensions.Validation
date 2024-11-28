@@ -510,12 +510,6 @@ public static partial class ObjectGraphValidator
 
         Debug.Assert(instance != null);
 
-        if (!(validationContext.Items.TryGetValue(_validatedObjectsKey, out var item) && item is HashSet<object> visited && visited.Add(instance!)))
-        {
-            // Already visited this object.
-            return [];
-        }
-
         // Step 1: Validate the object properties' validation attributes
         List<ValidationError> errors = await GetObjectPropertyValidationErrorsAsync(instance!, validationContext, validateAllProperties, breakOnFirstError, cancellationToken);
 
@@ -603,12 +597,6 @@ public static partial class ObjectGraphValidator
 
         foreach (KeyValuePair<ValidationContext, object?> property in properties)
         {
-            //if (property.Value != null && !(validationContext.Items.TryGetValue(_validatedObjectsKey, out var item) && item is HashSet<object> visited && visited.Add(property.Value)))
-            //{
-            //    // Already visited this object.
-            //    return [];
-            //}
-
             // get list of all validation attributes for this property
             IEnumerable<ValidationAttribute> attributes = _store.GetPropertyValidationAttributes(property.Key);
 
@@ -667,12 +655,6 @@ public static partial class ObjectGraphValidator
         if (validationContext == null)
         {
             throw new ArgumentNullException(nameof(validationContext));
-        }
-
-        if (value != null && !(validationContext.Items.TryGetValue(_validatedObjectsKey, out var item) && item is HashSet<object> visited && visited.Add(value)))
-        {
-            // Already visited this object.
-            return [];
         }
 
         List<ValidationError> errors = new List<ValidationError>();
@@ -761,6 +743,13 @@ public static partial class ObjectGraphValidator
         if (instance != validationContext.ObjectInstance)
         {
             throw new ArgumentException("Validator_InstanceMustMatchValidationContextInstance", nameof(instance));
+        }
+
+        if (!(validationContext.Items.TryGetValue(_validatedObjectsKey, out var item)
+            && item is HashSet<object> visited
+            && visited.Add(instance)))
+        {
+            return true;
         }
 
         bool isValid = true;
@@ -911,9 +900,7 @@ public static partial class ObjectGraphValidator
         CancellationToken cancellationToken)
     {
         if (element is null || !IsValidatableType(element.GetType(), predicate)) return true;
-        if (validationContext.Items.TryGetValue(_validatedObjectsKey, out var contextItem)
-            && contextItem is HashSet<object> visited
-            && visited.Contains(element)) return true;
+
         return await TryValidateObjectRecursiveAsync(
             element,
             CreateValidationContext(
@@ -942,12 +929,6 @@ public static partial class ObjectGraphValidator
         CancellationToken cancellationToken)
     {
         Debug.Assert(validationContext != null);
-
-        //if (value != null && !(validationContext.Items.TryGetValue(_validatedObjectsKey, out var item) && item is HashSet<object> visited && visited.Add(value)))
-        //{
-        //    // Already visited this object.
-        //    return (true, null);
-        //}
 
         ValidationResult? validationResult;
         if (attribute is AsyncValidationAttribute asyncValidation)

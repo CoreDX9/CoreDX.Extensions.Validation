@@ -13,20 +13,71 @@ namespace CoreDX.Extensions.Validation.Tests
             var instance = new A
             {
                 IdA = 1,
+
+                // $.NameA 超长
                 NameA = "AAAAAAAAAAQ",
                 B = new()
                 {
+                    // $.B.IdB 超范围
                     IdB = 200,
+
+                    // $.B.NameB 异步失败（附带对IdB属性名的引用）
                     NameB = "BB"
                 }
             };
 
-            instance.Add(new() { IdC = 311, B = new() { IdB = 400, NameB = "CC" } });
-            instance.Add(new() { IdC = 300 });
+            instance.Add(new()
+            {
+                // $[0].IdC 超范围
+                IdC = 311,
+                B = new()
+                {
+                    // $[0].B.IdB 超范围
+                    IdB = 400,
 
-            instance.ElementAt(1)[instance] = new B { IdB = 500, NameB = "DDDDDDDDDD" };
-            instance.ElementAt(1)[new A { IdA = 700, NameA = "FFFFFFFFFF" }] = new B { IdB = 600, NameB = "EEEEEEEEEE", A = instance };
+                    // $[0].B.NameB 异步失败（附带对IdB属性名的引用）
+                    NameB = "CC"
+                }
+            });
 
+            instance.Add(new() 
+            {
+                // $[1].IdC 超范围
+                IdC = 300
+
+                // $[1].B 必填留空
+            });
+
+            // 此处的instance是循环引用，在之前已经验证过
+            // $[1].Keys[0]
+            instance.ElementAt(1)[instance] = new B
+            {
+                // $[1].Values[0].IdB 超范围
+                IdB = 500,
+
+                // $[1].Values[0].NameB 异步失败（附带对IdB属性名的引用）
+                NameB = "DDDDDDDDDD"
+            };
+
+            instance.ElementAt(1)[new A
+            {
+                // $[1].Keys[1].IdA 超范围
+                IdA = 700,
+                NameA = "FFFFFFFFFF"
+            }] = new B
+            {
+                // $[1].Values[1].IdB 超范围
+                IdB = 600,
+                // $[1].Values[1].NameB 异步失败（附带对IdB属性名的引用）
+                NameB = "EEEEEEEEEE",
+
+                // 此处的instance是循环引用，在之前已经验证过
+                // $[1].Values[1].A
+                A = instance
+            };
+
+            // 此处的instance是循环引用，在之前已经验证过
+            // $.B.A
             instance.B.A = instance;
 
             var context = new ValidationContext(instance);
@@ -45,7 +96,41 @@ namespace CoreDX.Extensions.Validation.Tests
                 });
 
             Assert.False(result);
-            Assert.Equal(8, resultStore.Count());
+
+            // $.NameA 超长
+            // $.B.IdB 超范围
+            // $.B.NameB 异步失败（附带对IdB属性名的引用）
+            // $[0].IdC 超范围
+            // $[0].B.IdB 超范围
+            // $[0].B.NameB 异步失败（附带对IdB属性名的引用）
+            // $[1].IdC 超范围
+            // $[1].B 必填留空
+            // $[1].Keys[1].IdA 超范围
+            // $[1].Values[0].IdB 超范围
+            // $[1].Values[0].NameB 异步失败（附带对IdB属性名的引用）
+            // $[1].Values[1].IdB 超范围
+            // $[1].Values[1].NameB 异步失败（附带对IdB属性名的引用）
+            Assert.Equal(13, resultStore.Count());
+
+            var context2 = new ValidationContext(instance);
+            var resultStore2 = new ValidationResultStore();
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+            {
+                var result2 = ObjectGraphValidator.TryValidateObject(
+                    instance,
+                    context2,
+                    resultStore2,
+                    true,
+                    type =>
+                    {
+                        if (type == typeof(string) || type == typeof(int))
+                            throw new ArgumentException("Called with known built-in type.");
+
+                        return true;
+                    });
+            });
+
+            Assert.Equal("Async validation called synchronously.", exception.Message);
         }
 
         [Fact]
@@ -60,136 +145,136 @@ namespace CoreDX.Extensions.Validation.Tests
             Assert.True(result);
             Assert.Equal("The validation context has already been used. (Parameter 'validationContext')", exception.Message);
         }
-
-        #region Test classes
-
-        public class A : ICollection<C>
-        {
-            private readonly List<C> _list = [];
-
-            [Range(0, 100)]
-            public int IdA { get; set; }
-
-            [Required, MaxLength(10)]
-            public string NameA { get; set; }
-
-            public B B { get; set; }
-
-            public int Count => ((ICollection<C>)_list).Count;
-
-            public bool IsReadOnly => ((ICollection<C>)_list).IsReadOnly;
-
-            public void Add(C item) => ((ICollection<C>)_list).Add(item);
-
-            public void Clear() => ((ICollection<C>)_list).Clear();
-
-            public bool Contains(C item) => ((ICollection<C>)_list).Contains(item);
-
-            public void CopyTo(C[] array, int arrayIndex) => ((ICollection<C>)_list).CopyTo(array, arrayIndex);
-
-            public IEnumerator<C> GetEnumerator() => ((IEnumerable<C>)_list).GetEnumerator();
-
-            public bool Remove(C item) => ((ICollection<C>)_list).Remove(item);
-
-            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_list).GetEnumerator();
-        }
-
-        public class B
-        {
-            [Range(0, 100)]
-            public int IdB { get; set; }
-
-            [Required, MaxLength(10)]
-            [AsyncMemberNamesFail]
-            public string NameB { get; set; }
-
-            public A A { get; set; }
-        }
-
-        public class C : IDictionary<A, B>
-        {
-            private readonly Dictionary<A, B> _dict = [];
-
-            public B this[A key] { get => ((IDictionary<A, B>)_dict)[key]; set => ((IDictionary<A, B>)_dict)[key] = value; }
-
-            [Range(0, 100)]
-            public int IdC { get; set; }
-
-            [Required]
-            public B B { get; set; }
-
-            public ICollection<A> Keys => ((IDictionary<A, B>)_dict).Keys;
-
-            public ICollection<B> Values => ((IDictionary<A, B>)_dict).Values;
-
-            public int Count => ((ICollection<KeyValuePair<A, B>>)_dict).Count;
-
-            public bool IsReadOnly => ((ICollection<KeyValuePair<A, B>>)_dict).IsReadOnly;
-
-            public void Add(A key, B value)
-            {
-                ((IDictionary<A, B>)_dict).Add(key, value);
-            }
-
-            public void Add(KeyValuePair<A, B> item)
-            {
-                ((ICollection<KeyValuePair<A, B>>)_dict).Add(item);
-            }
-
-            public void Clear()
-            {
-                ((ICollection<KeyValuePair<A, B>>)_dict).Clear();
-            }
-
-            public bool Contains(KeyValuePair<A, B> item)
-            {
-                return ((ICollection<KeyValuePair<A, B>>)_dict).Contains(item);
-            }
-
-            public bool ContainsKey(A key)
-            {
-                return ((IDictionary<A, B>)_dict).ContainsKey(key);
-            }
-
-            public void CopyTo(KeyValuePair<A, B>[] array, int arrayIndex)
-            {
-                ((ICollection<KeyValuePair<A, B>>)_dict).CopyTo(array, arrayIndex);
-            }
-
-            public IEnumerator<KeyValuePair<A, B>> GetEnumerator()
-            {
-                return ((IEnumerable<KeyValuePair<A, B>>)_dict).GetEnumerator();
-            }
-
-            public bool Remove(A key)
-            {
-                return ((IDictionary<A, B>)_dict).Remove(key);
-            }
-
-            public bool Remove(KeyValuePair<A, B> item)
-            {
-                return ((ICollection<KeyValuePair<A, B>>)_dict).Remove(item);
-            }
-
-            public bool TryGetValue(A key, [MaybeNullWhen(false)] out B value)
-            {
-                return ((IDictionary<A, B>)_dict).TryGetValue(key, out value);
-            }
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return ((IEnumerable)_dict).GetEnumerator();
-            }
-        }
-
-        public class AsyncMemberNamesFailAttribute : AsyncValidationAttribute
-        {
-            protected override ValueTask<ValidationResult> IsValidAsync(object value, ValidationContext validationContext, CancellationToken cancellationToken = default)
-            {
-                return ValueTask.FromResult(new ValidationResult(FormatErrorMessage(validationContext.MemberName), [nameof(B.IdB), nameof(B.NameB)]));
-            }
-        }
-
-        #endregion
     }
+
+    #region Test classes
+
+    public class A : ICollection<C>
+    {
+        private readonly List<C> _list = [];
+
+        [Range(0, 100)]
+        public int IdA { get; set; }
+
+        [Required, MaxLength(10)]
+        public string NameA { get; set; }
+
+        public B B { get; set; }
+
+        public int Count => ((ICollection<C>)_list).Count;
+
+        public bool IsReadOnly => ((ICollection<C>)_list).IsReadOnly;
+
+        public void Add(C item) => ((ICollection<C>)_list).Add(item);
+
+        public void Clear() => ((ICollection<C>)_list).Clear();
+
+        public bool Contains(C item) => ((ICollection<C>)_list).Contains(item);
+
+        public void CopyTo(C[] array, int arrayIndex) => ((ICollection<C>)_list).CopyTo(array, arrayIndex);
+
+        public IEnumerator<C> GetEnumerator() => ((IEnumerable<C>)_list).GetEnumerator();
+
+        public bool Remove(C item) => ((ICollection<C>)_list).Remove(item);
+
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_list).GetEnumerator();
+    }
+
+    public class B
+    {
+        [Range(0, 100)]
+        public int IdB { get; set; }
+
+        [Required, MaxLength(10)]
+        [AsyncMemberNamesFail]
+        public string NameB { get; set; }
+
+        public A A { get; set; }
+    }
+
+    public class C : IDictionary<A, B>
+    {
+        private readonly Dictionary<A, B> _dict = [];
+
+        public B this[A key] { get => ((IDictionary<A, B>)_dict)[key]; set => ((IDictionary<A, B>)_dict)[key] = value; }
+
+        [Range(0, 100)]
+        public int IdC { get; set; }
+
+        [Required]
+        public B B { get; set; }
+
+        public ICollection<A> Keys => ((IDictionary<A, B>)_dict).Keys;
+
+        public ICollection<B> Values => ((IDictionary<A, B>)_dict).Values;
+
+        public int Count => ((ICollection<KeyValuePair<A, B>>)_dict).Count;
+
+        public bool IsReadOnly => ((ICollection<KeyValuePair<A, B>>)_dict).IsReadOnly;
+
+        public void Add(A key, B value)
+        {
+            ((IDictionary<A, B>)_dict).Add(key, value);
+        }
+
+        public void Add(KeyValuePair<A, B> item)
+        {
+            ((ICollection<KeyValuePair<A, B>>)_dict).Add(item);
+        }
+
+        public void Clear()
+        {
+            ((ICollection<KeyValuePair<A, B>>)_dict).Clear();
+        }
+
+        public bool Contains(KeyValuePair<A, B> item)
+        {
+            return ((ICollection<KeyValuePair<A, B>>)_dict).Contains(item);
+        }
+
+        public bool ContainsKey(A key)
+        {
+            return ((IDictionary<A, B>)_dict).ContainsKey(key);
+        }
+
+        public void CopyTo(KeyValuePair<A, B>[] array, int arrayIndex)
+        {
+            ((ICollection<KeyValuePair<A, B>>)_dict).CopyTo(array, arrayIndex);
+        }
+
+        public IEnumerator<KeyValuePair<A, B>> GetEnumerator()
+        {
+            return ((IEnumerable<KeyValuePair<A, B>>)_dict).GetEnumerator();
+        }
+
+        public bool Remove(A key)
+        {
+            return ((IDictionary<A, B>)_dict).Remove(key);
+        }
+
+        public bool Remove(KeyValuePair<A, B> item)
+        {
+            return ((ICollection<KeyValuePair<A, B>>)_dict).Remove(item);
+        }
+
+        public bool TryGetValue(A key, [MaybeNullWhen(false)] out B value)
+        {
+            return ((IDictionary<A, B>)_dict).TryGetValue(key, out value);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable)_dict).GetEnumerator();
+        }
+    }
+
+    public class AsyncMemberNamesFailAttribute : AsyncValidationAttribute
+    {
+        protected override ValueTask<ValidationResult> IsValidAsync(object value, ValidationContext validationContext, CancellationToken cancellationToken = default)
+        {
+            return ValueTask.FromResult(new ValidationResult(FormatErrorMessage(validationContext.MemberName), [nameof(B.IdB), nameof(B.NameB)]));
+        }
+    }
+
+    #endregion
 }

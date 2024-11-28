@@ -100,6 +100,7 @@ namespace CoreDX.Extensions.Validation.Tests
             public int IdB { get; set; }
 
             [Required, MaxLength(10)]
+            [AsyncMemberNamesFail]
             public string NameB { get; set; }
 
             public A A { get; set; }
@@ -178,6 +179,14 @@ namespace CoreDX.Extensions.Validation.Tests
             IEnumerator IEnumerable.GetEnumerator()
             {
                 return ((IEnumerable)_dict).GetEnumerator();
+            }
+        }
+
+        public class AsyncMemberNamesFailAttribute : AsyncValidationAttribute
+        {
+            protected override ValueTask<ValidationResult> IsValidAsync(object value, ValidationContext validationContext, CancellationToken cancellationToken = default)
+            {
+                return ValueTask.FromResult(new ValidationResult(FormatErrorMessage(validationContext.MemberName), [nameof(B.IdB), nameof(B.NameB)]));
             }
         }
 

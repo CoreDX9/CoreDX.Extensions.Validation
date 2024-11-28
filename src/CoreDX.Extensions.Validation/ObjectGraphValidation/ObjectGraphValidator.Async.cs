@@ -880,7 +880,7 @@ public static partial class ObjectGraphValidator
             foreach (var item in enumerable)
             {
                 index++;
-                var innerIsValid = TryValidateEnumerableElement(
+                var innerIsValid = await TryValidateAsyncEnumerableElementAsync(
                     instance,
                     validationContext,
                     validationResults,
@@ -888,7 +888,8 @@ public static partial class ObjectGraphValidator
                     predicate,
                     throwOnFirstError,
                     index,
-                    item);
+                    item,
+                    cancellationToken);
                 if (isValid && !innerIsValid) isValid = false;
                 if (!isValid && breakOnFirstError) break;
             }

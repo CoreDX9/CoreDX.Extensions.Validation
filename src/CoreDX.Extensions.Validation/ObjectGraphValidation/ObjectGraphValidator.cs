@@ -17,6 +17,7 @@ using System.Diagnostics.CodeAnalysis;
 #endif
 using System.Globalization;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace CoreDX.Extensions.ComponentModel.DataAnnotations;
@@ -1156,10 +1157,22 @@ public static partial class ObjectGraphValidator
         var modelIdentyfier = (FieldIdentifier)err.ValidationContext.Items[_validateObjectOwnerKey]!;
         foreach (var memberName in err.ValidationResult.MemberNames)
         {
-            var modelType = modelIdentyfier.ModelOwner?.Model.GetType();
-            var model = modelType?.GetProperty(memberName)?.GetValue(modelIdentyfier.ModelOwner?.Model)
-                ?? modelType?.GetField(memberName)?.GetValue(modelIdentyfier.ModelOwner?.Model);
-            validationResultStore.Add(model is not null ? new FieldIdentifier(model, memberName, modelIdentyfier.ModelOwner) : modelIdentyfier, err.ValidationResult);
+            object? memberValue = null;
+            PropertyInfo? propertyInfo = null;
+            FieldInfo? fieldInfo = null;
+            var fieldType = modelIdentyfier.FieldOwner?.FieldValue?.GetType();
+            if (fieldType?.GetProperty(memberName) is PropertyInfo prop)
+            {
+                propertyInfo = prop;
+                memberValue = propertyInfo.GetValue(modelIdentyfier.FieldOwner?.FieldValue);
+            }   
+            else if(fieldType?.GetField(memberName) is FieldInfo field)
+            {
+                fieldInfo = field;
+                memberValue = fieldInfo.GetValue(modelIdentyfier.FieldOwner?.FieldValue);
+            }
+
+            validationResultStore.Add(propertyInfo is not null || fieldInfo is not null ? new FieldIdentifier(memberValue, memberName, modelIdentyfier.FieldOwner) : modelIdentyfier, err.ValidationResult);
         }
     }
 

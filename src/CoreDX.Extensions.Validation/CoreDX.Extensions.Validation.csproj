@@ -11,6 +11,7 @@
       fix: Object graph validator's recursion bug.
       update: Object graph validator tests.
       refactoring: Change all return type to ValueTask.
+      refactoring: Update exception message.
     </PackageReleaseNotes>
   </PropertyGroup>
 

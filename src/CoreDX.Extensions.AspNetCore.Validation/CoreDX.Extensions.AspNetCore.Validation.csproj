@@ -4,13 +4,12 @@
     <TargetFrameworks>net9.0;net8.0;net7.0;net6.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageVersion>1.2.2</PackageVersion>
+    <PackageVersion>1.2.3</PackageVersion>
     <PackageTags>ModelValidation AsyncModelValidation</PackageTags>
     <Description>Model binder with async model validation services for ASP.NET Core MVC.</Description>
     <Title>ASP.NET Core MVC model binder with async model validation services.</Title>
     <PackageReleaseNotes>
-      refactoring: Update exception message.
-      refactoring: Update to .NET 9.0's parameter binder implementation.
+      refactoring: Change AsyncParameterBinder's namespace.
     </PackageReleaseNotes>
   </PropertyGroup>
     

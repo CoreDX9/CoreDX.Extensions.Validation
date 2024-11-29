@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using CoreDX.Extensions.AspNetCore.Mvc.ModelBinding.Validation;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -6,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace CoreDX.Extensions.AspNetCore.Mvc.ModelBinding.Validation;
+namespace CoreDX.Extensions.AspNetCore.Mvc.ModelBinding;
 
 /// <inheritdoc/>
 public partial class AsyncParamterBinder : ParameterBinder

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.Extensions.Logging;
 
-namespace CoreDX.Extensions.AspNetCore.Mvc.ModelBinding.Validation;
+namespace CoreDX.Extensions.AspNetCore.Mvc.ModelBinding;
 
 public partial class AsyncParamterBinder
 {

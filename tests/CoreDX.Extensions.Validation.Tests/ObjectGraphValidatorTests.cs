@@ -98,17 +98,17 @@ namespace CoreDX.Extensions.Validation.Tests
             Assert.False(result);
 
             // $.NameA 超长
-            // $.B.IdB 超范围
+            // $.B.IdB 超范围（因NameB的连带会显示2个错误）
             // $.B.NameB 异步失败（附带对IdB属性名的引用）
             // $[0].IdC 超范围
-            // $[0].B.IdB 超范围
+            // $[0].B.IdB 超范围（因NameB的连带会显示2个错误）
             // $[0].B.NameB 异步失败（附带对IdB属性名的引用）
             // $[1].IdC 超范围
             // $[1].B 必填留空
             // $[1].Keys[1].IdA 超范围
-            // $[1].Values[0].IdB 超范围
+            // $[1].Values[0].IdB 超范围（因NameB的连带会显示2个错误）
             // $[1].Values[0].NameB 异步失败（附带对IdB属性名的引用）
-            // $[1].Values[1].IdB 超范围
+            // $[1].Values[1].IdB 超范围（因NameB的连带会显示2个错误）
             // $[1].Values[1].NameB 异步失败（附带对IdB属性名的引用）
             Assert.Equal(13, resultStore.Count());
 

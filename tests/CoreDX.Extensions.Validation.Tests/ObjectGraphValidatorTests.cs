@@ -18,7 +18,7 @@ namespace CoreDX.Extensions.Validation.Tests
                 NameA = "AAAAAAAAAAQ",
                 B = new()
                 {
-                    // $.B.IdB 超范围
+                    // $.B.IdB 超范围（因NameB的连带会显示2个错误）
                     IdB = 200,
 
                     // $.B.NameB 异步失败（附带对IdB属性名的引用）
@@ -32,7 +32,7 @@ namespace CoreDX.Extensions.Validation.Tests
                 IdC = 311,
                 B = new()
                 {
-                    // $[0].B.IdB 超范围
+                    // $[0].B.IdB 超范围（因NameB的连带会显示2个错误）
                     IdB = 400,
 
                     // $[0].B.NameB 异步失败（附带对IdB属性名的引用）
@@ -52,7 +52,7 @@ namespace CoreDX.Extensions.Validation.Tests
             // $[1].Keys[0]
             instance.ElementAt(1)[instance] = new B
             {
-                // $[1].Values[0].IdB 超范围
+                // $[1].Values[0].IdB 超范围（因NameB的连带会显示2个错误）
                 IdB = 500,
 
                 // $[1].Values[0].NameB 异步失败（附带对IdB属性名的引用）
@@ -66,7 +66,7 @@ namespace CoreDX.Extensions.Validation.Tests
                 NameA = "FFFFFFFFFF"
             }] = new B
             {
-                // $[1].Values[1].IdB 超范围
+                // $[1].Values[1].IdB 超范围（因NameB的连带会显示2个错误）
                 IdB = 600,
                 // $[1].Values[1].NameB 异步失败（附带对IdB属性名的引用）
                 NameB = "EEEEEEEEEE",

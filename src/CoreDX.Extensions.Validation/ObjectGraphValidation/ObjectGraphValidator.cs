@@ -967,7 +967,7 @@ public static partial class ObjectGraphValidator
         }
         if (instance != validationContext.ObjectInstance)
         {
-            throw new ArgumentException("Validator_InstanceMustMatchValidationContextInstance", nameof(instance));
+            throw new ArgumentException("The instance provided must match the ObjectInstance on the ValidationContext supplied.", nameof(instance));
         }
 
         if (!(validationContext.Items.TryGetValue(_validatedObjectsKey, out var item)

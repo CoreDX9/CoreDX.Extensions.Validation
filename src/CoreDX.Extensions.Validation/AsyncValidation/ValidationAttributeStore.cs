@@ -218,7 +218,7 @@ internal sealed class ValidationAttributeStore
         {
             if (!TryGetPropertyStoreItem(propertyName, out PropertyStoreItem? item))
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "AttributeStore_Unknown_Property", _type.Name, propertyName), nameof(propertyName));
+                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "The type '{0}' does not contain a public property named '{1}'.", _type.Name, propertyName), nameof(propertyName));
             }
 
             return item!;

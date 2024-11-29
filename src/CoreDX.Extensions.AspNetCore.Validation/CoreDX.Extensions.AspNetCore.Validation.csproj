@@ -9,9 +9,8 @@
     <Description>Model binder with async model validation services for ASP.NET Core MVC.</Description>
     <Title>ASP.NET Core MVC model binder with async model validation services.</Title>
     <PackageReleaseNotes>
-      refactoring: Clean up synchronous validation code from asynchronous validators.
-      refactoring: Rename extension method IMvcBuilder.AddAsyncValidation to IMvcBuilder.AddAsyncDataAnnotations.
-      add: Add IMvcCoreBuilder support.
+      refactoring: Update exception message.
+      refactoring: Update to .NET 9.0's parameter binder implementation.
     </PackageReleaseNotes>
   </PropertyGroup>
     

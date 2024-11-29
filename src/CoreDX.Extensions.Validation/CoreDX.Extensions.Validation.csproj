@@ -8,7 +8,9 @@
     <Description>Async validation and object graph validation extensions.</Description>
     <Title>New helper classes modified from System.ComponentModel.DataAnnotations.Validator to support async validation and object graph validation.</Title>
     <PackageReleaseNotes>
-      Change all return type to ValueTask.
+      fix: Object graph validator's recursion bug.
+      update: Object graph validator tests.
+      refactoring: Change all return type to ValueTask.
     </PackageReleaseNotes>
   </PropertyGroup>
 

@@ -25,8 +25,7 @@ var validationResults = new List<ValidationResult>();
 bool isValid = await AsyncValidator.TryValidateObject(objectToBeValidated, validationContext, validationResults, true);
 
 var objectGraphValidationContext = new ValidationContext(objectToBeValidated);
-// AsyncValidationAttribute will be ignored.
-ObjectGraphValidator.ValidateObject(objectToBeValidated, objectGraphValidationContext, true);
+ObjectGraphValidator.ValidateObject(objectToBeValidated, objectGraphValidationContext, AsyncValidationBehavior.TrySynchronously, true);
 
 var objectGraphValidationContext2 = new ValidationContext(objectToBeValidated);
 await ObjectGraphValidator.ValidateObjectAsync(objectToBeValidated, objectGraphValidationContext2, true);

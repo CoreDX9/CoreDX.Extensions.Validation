@@ -112,14 +112,30 @@ namespace CoreDX.Extensions.Validation.Tests
             // $[1].Values[1].NameB 异步失败（附带对IdB属性名的引用）
             Assert.Equal(13, resultStore.Count());
 
-            var context2 = new ValidationContext(instance);
-            var resultStore2 = new ValidationResultStore();
             var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                var result2 = ObjectGraphValidator.TryValidateObject(
-                    instance,
-                    context2,
-                    resultStore2,
+                TryValidateObject(instance, new ValidationContext(instance), new ValidationResultStore(), AsyncValidationBehavior.Throw);
+            });
+
+            Assert.Equal("Async validation called synchronously.", exception.Message);
+
+            var resultStore2 = new ValidationResultStore();
+            TryValidateObject(instance, new ValidationContext(instance), resultStore2, AsyncValidationBehavior.TrySynchronously);
+
+            Assert.Equal(13, resultStore2.Count());
+
+            var resultStore3 = new ValidationResultStore();
+            TryValidateObject(instance, new ValidationContext(instance), resultStore3, AsyncValidationBehavior.Ignore);
+
+            Assert.Equal(9, resultStore3.Count());
+
+            static bool TryValidateObject(object obj, ValidationContext context, ValidationResultStore resultStore, AsyncValidationBehavior behavior)
+            {
+                return ObjectGraphValidator.TryValidateObject(
+                    obj,
+                    context,
+                    resultStore,
+                    behavior,
                     true,
                     type =>
                     {
@@ -128,9 +144,7 @@ namespace CoreDX.Extensions.Validation.Tests
 
                         return true;
                     });
-            });
-
-            Assert.Equal("Async validation called synchronously.", exception.Message);
+            }
         }
 
         [Fact]

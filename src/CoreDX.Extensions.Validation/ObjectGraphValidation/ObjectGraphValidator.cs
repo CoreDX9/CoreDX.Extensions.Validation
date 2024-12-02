@@ -10,7 +10,6 @@ using System.Collections.Frozen;
 using System.Collections.Immutable;
 #endif
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 #if NET6_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
@@ -146,6 +145,7 @@ public static partial class ObjectGraphValidator
     /// <param name="value">The value to test.</param>
     /// <param name="validationContext">Describes the property member to validate and provides services and context for the validators.</param>
     /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult"/>s for the failures.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <returns><c>true</c> if the value is valid, <c>false</c> if any validation errors are encountered.</returns>
     /// <exception cref="ArgumentException">
     /// When the <see cref="ValidationContext.MemberName"/> of <paramref name="validationContext"/> is not a valid property.
@@ -156,8 +156,9 @@ public static partial class ObjectGraphValidator
     public static bool TryValidateProperty(
         object? value,
         ValidationContext validationContext,
-        ValidationResultStore? validationResults)
-        => TryValidateProperty(value, validationContext, validationResults, predicate: null, throwOnFirstError: false);
+        ValidationResultStore? validationResults,
+        AsyncValidationBehavior asyncValidationBehavior)
+        => TryValidateProperty(value, validationContext, validationResults, asyncValidationBehavior, predicate: null, throwOnFirstError: false);
 
     /// <summary>
     /// Tests whether the given property value is valid.
@@ -179,6 +180,7 @@ public static partial class ObjectGraphValidator
     /// <param name="value">The value to test.</param>
     /// <param name="validationContext">Describes the property member to validate and provides services and context for the validators.</param>
     /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult"/>s for the failures.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <param name="predicate">A predicate to filter whether to recursively validate the properties of this type.</param>
     /// <returns><c>true</c> if the value is valid, <c>false</c> if any validation errors are encountered.</returns>
     /// <exception cref="ArgumentException">
@@ -191,6 +193,7 @@ public static partial class ObjectGraphValidator
         object? value,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
+        AsyncValidationBehavior asyncValidationBehavior,
         Func<Type, bool> predicate)
     {
         if (predicate is null)
@@ -198,7 +201,7 @@ public static partial class ObjectGraphValidator
             throw new ArgumentNullException(nameof(predicate));
         }
 
-        return TryValidateProperty(value, validationContext, validationResults, predicate, throwOnFirstError: false);
+        return TryValidateProperty(value, validationContext, validationResults, asyncValidationBehavior, predicate, throwOnFirstError: false);
     }
 
     /// <summary>
@@ -221,6 +224,7 @@ public static partial class ObjectGraphValidator
     /// <param name="value">The value to test.</param>
     /// <param name="validationContext">Describes the property member to validate and provides services and context for the validators.</param>
     /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult"/>s for the failures.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <param name="predicate">A predicate to filter whether to recursively validate the properties of this type.</param>
     /// <param name="throwOnFirstError">Whether to throw an exception when a validation error is detected.</param>
     /// <returns><c>true</c> if the value is valid, <c>false</c> if any validation errors are encountered.</returns>
@@ -234,6 +238,7 @@ public static partial class ObjectGraphValidator
         object? value,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
+        AsyncValidationBehavior asyncValidationBehavior,
         Func<Type, bool>? predicate,
         bool throwOnFirstError)
     {
@@ -252,7 +257,7 @@ public static partial class ObjectGraphValidator
 
         IEnumerable<ValidationAttribute> attributes = _store.GetPropertyValidationAttributes(validationContext);
 
-        foreach (ValidationError err in GetValidationErrors(value, validationContext, attributes, breakOnFirstError))
+        foreach (ValidationError err in GetValidationErrors(value, validationContext, attributes, asyncValidationBehavior, breakOnFirstError))
         {
             if (throwOnFirstError) err.ThrowValidationException();
 
@@ -269,6 +274,7 @@ public static partial class ObjectGraphValidator
                 value,
                 validationContext,
                 validationResults,
+                asyncValidationBehavior,
                 validateAllProperties: true,
                 predicate,
                 throwOnFirstError);
@@ -294,6 +300,7 @@ public static partial class ObjectGraphValidator
     /// <param name="instance">The object instance to test.  It cannot be <c>null</c>.</param>
     /// <param name="validationContext">Describes the object to validate and provides services and context for the validators.</param>
     /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult"/>s for the failures.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <returns><c>true</c> if the object is valid, <c>false</c> if any validation errors are encountered.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="instance"/> is null.</exception>
     /// <exception cref="ArgumentException">When <paramref name="instance"/> doesn't match the
@@ -304,8 +311,9 @@ public static partial class ObjectGraphValidator
     public static bool TryValidateObject(
         object instance,
         ValidationContext validationContext,
-        ValidationResultStore? validationResults)
-        => TryValidateObject(instance, validationContext, validationResults, validateAllProperties: false, predicate: null);
+        ValidationResultStore? validationResults,
+        AsyncValidationBehavior asyncValidationBehavior)
+        => TryValidateObject(instance, validationContext, validationResults, asyncValidationBehavior, validateAllProperties: false, predicate: null);
 
     /// <summary>
     /// Tests whether the given object instance is valid.
@@ -323,6 +331,7 @@ public static partial class ObjectGraphValidator
     /// <param name="instance">The object instance to test.  It cannot be <c>null</c>.</param>
     /// <param name="validationContext">Describes the object to validate and provides services and context for the validators.</param>
     /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult"/>s for the failures.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <param name="validateAllProperties">If <c>true</c>, also evaluates all properties of the object (this process is not
     /// recursive over properties of the properties).</param>
     /// <returns><c>true</c> if the object is valid, <c>false</c> if any validation errors are encountered.</returns>
@@ -336,8 +345,9 @@ public static partial class ObjectGraphValidator
         object instance,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
+        AsyncValidationBehavior asyncValidationBehavior,
         bool validateAllProperties)
-        => TryValidateObject(instance, validationContext, validationResults, validateAllProperties, predicate: null);
+        => TryValidateObject(instance, validationContext, validationResults, asyncValidationBehavior, validateAllProperties, predicate: null);
 
     /// <summary>
     /// Tests whether the given object instance is valid.
@@ -355,6 +365,7 @@ public static partial class ObjectGraphValidator
     /// <param name="instance">The object instance to test.  It cannot be <c>null</c>.</param>
     /// <param name="validationContext">Describes the object to validate and provides services and context for the validators.</param>
     /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult"/>s for the failures.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <param name="predicate">A predicate to filter whether to recursively validate the properties of this type.</param>
     /// <returns><c>true</c> if the object is valid, <c>false</c> if any validation errors are encountered.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="instance"/> is null.</exception>
@@ -367,6 +378,7 @@ public static partial class ObjectGraphValidator
         object instance,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
+        AsyncValidationBehavior asyncValidationBehavior,
         Func<Type, bool> predicate)
     {
         if (predicate is null)
@@ -374,7 +386,7 @@ public static partial class ObjectGraphValidator
             throw new ArgumentNullException(nameof(predicate));
         }
 
-        return TryValidateObject(instance, validationContext, validationResults, validateAllProperties: false, predicate);
+        return TryValidateObject(instance, validationContext, validationResults, asyncValidationBehavior, validateAllProperties: false, predicate);
     }
 
     /// <summary>
@@ -398,6 +410,7 @@ public static partial class ObjectGraphValidator
     /// <param name="instance">The object instance to test.  It cannot be null.</param>
     /// <param name="validationContext">Describes the object to validate and provides services and context for the validators.</param>
     /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult"/>s for the failures.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <param name="validateAllProperties">If <c>true</c>, also evaluates all properties of the object (this process is not
     /// recursive over properties of the properties).</param>
     /// <param name="predicate">A predicate to filter whether to recursively validate the properties of this type.</param>
@@ -412,6 +425,7 @@ public static partial class ObjectGraphValidator
         object instance,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
+        AsyncValidationBehavior asyncValidationBehavior,
         bool validateAllProperties,
         Func<Type, bool>? predicate)
     {
@@ -419,7 +433,7 @@ public static partial class ObjectGraphValidator
 
         validationContext.Items.Add(_validatedObjectsKey, new HashSet<object>());
         validationContext.Items.Add(_validateObjectOwnerKey, null);
-        return TryValidateObjectRecursive(instance, validationContext, validationResults, validateAllProperties, predicate, throwOnFirstError: false);
+        return TryValidateObjectRecursive(instance, validationContext, validationResults, asyncValidationBehavior, validateAllProperties, predicate, throwOnFirstError: false);
     }
 
     /// <summary>
@@ -427,6 +441,7 @@ public static partial class ObjectGraphValidator
     /// </summary>
     /// <param name="value">The value to test.</param>
     /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.  It cannot be <c>null</c>.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
     /// <exception cref="ValidationException">When <paramref name="value"/> is invalid for this property.</exception>
 #if NET6_0_OR_GREATER
@@ -434,14 +449,16 @@ public static partial class ObjectGraphValidator
 # endif
     public static void ValidateProperty(
         object? value,
-        ValidationContext validationContext)
-        => TryValidateProperty(value, validationContext, validationResults: null, predicate: null, throwOnFirstError: true);
+        ValidationContext validationContext,
+        AsyncValidationBehavior asyncValidationBehavior)
+        => TryValidateProperty(value, validationContext, validationResults: null, asyncValidationBehavior, predicate: null, throwOnFirstError: true);
 
     /// <summary>
     /// Throws a <see cref="ValidationException"/> if the given property <paramref name="value"/> is not valid.
     /// </summary>
     /// <param name="value">The value to test.</param>
     /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.  It cannot be <c>null</c>.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <param name="predicate">A predicate to filter whether to recursively validate the properties of this type.</param>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
     /// <exception cref="ValidationException">When <paramref name="value"/> is invalid for this property.</exception>
@@ -451,6 +468,7 @@ public static partial class ObjectGraphValidator
     public static void ValidateProperty(
         object? value,
         ValidationContext validationContext,
+        AsyncValidationBehavior asyncValidationBehavior,
         Func<Type, bool> predicate)
     {
         if (predicate is null)
@@ -458,7 +476,7 @@ public static partial class ObjectGraphValidator
             throw new ArgumentNullException(nameof(predicate));
         }
 
-        TryValidateProperty(value, validationContext, validationResults: null, predicate, throwOnFirstError: true);
+        TryValidateProperty(value, validationContext, validationResults: null, asyncValidationBehavior, predicate, throwOnFirstError: true);
     }
 
     /// <summary>
@@ -469,28 +487,7 @@ public static partial class ObjectGraphValidator
     /// </remarks>
     /// <param name="instance">The object instance to test.  It cannot be null.</param>
     /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.  It cannot be <c>null</c>.</param>
-    /// <exception cref="ArgumentNullException">When <paramref name="instance"/> is null.</exception>
-    /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
-    /// <exception cref="ArgumentException">When <paramref name="instance"/> doesn't match the
-    /// <see cref="ValidationContext.ObjectInstance"/> on <paramref name="validationContext"/>.</exception>
-    /// <exception cref="ValidationException">When <paramref name="instance"/> is found to be invalid.</exception>
-#if NET6_0_OR_GREATER
-    [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
-#endif
-    public static void ValidateObject(
-        object instance,
-        ValidationContext validationContext)
-        => ValidateObject(instance, validationContext, validateAllProperties: false, predicate: null);
-
-    /// <summary>
-    /// Throws a <see cref="ValidationException"/> if the given <paramref name="instance"/> is not valid.
-    /// </summary>
-    /// <remarks>
-    /// This method evaluates all <see cref="ValidationAttribute"/>s attached to the object's type.
-    /// </remarks>
-    /// <param name="instance">The object instance to test.  It cannot be null.</param>
-    /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.  It cannot be <c>null</c>.</param>
-    /// <param name="predicate">A predicate to filter whether to recursively validate the properties of this type.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <exception cref="ArgumentNullException">When <paramref name="instance"/> is null.</exception>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
     /// <exception cref="ArgumentException">When <paramref name="instance"/> doesn't match the
@@ -502,6 +499,31 @@ public static partial class ObjectGraphValidator
     public static void ValidateObject(
         object instance,
         ValidationContext validationContext,
+        AsyncValidationBehavior asyncValidationBehavior)
+        => ValidateObject(instance, validationContext, asyncValidationBehavior, validateAllProperties: false, predicate: null);
+
+    /// <summary>
+    /// Throws a <see cref="ValidationException"/> if the given <paramref name="instance"/> is not valid.
+    /// </summary>
+    /// <remarks>
+    /// This method evaluates all <see cref="ValidationAttribute"/>s attached to the object's type.
+    /// </remarks>
+    /// <param name="instance">The object instance to test.  It cannot be null.</param>
+    /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.  It cannot be <c>null</c>.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
+    /// <param name="predicate">A predicate to filter whether to recursively validate the properties of this type.</param>
+    /// <exception cref="ArgumentNullException">When <paramref name="instance"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
+    /// <exception cref="ArgumentException">When <paramref name="instance"/> doesn't match the
+    /// <see cref="ValidationContext.ObjectInstance"/> on <paramref name="validationContext"/>.</exception>
+    /// <exception cref="ValidationException">When <paramref name="instance"/> is found to be invalid.</exception>
+#if NET6_0_OR_GREATER
+    [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
+#endif
+    public static void ValidateObject(
+        object instance,
+        ValidationContext validationContext,
+        AsyncValidationBehavior asyncValidationBehavior,
         Func<Type, bool> predicate)
     {
         if (predicate is null)
@@ -509,7 +531,7 @@ public static partial class ObjectGraphValidator
             throw new ArgumentNullException(nameof(predicate));
         }
 
-        ValidateObject(instance, validationContext, validateAllProperties: false, predicate);
+        ValidateObject(instance, validationContext, asyncValidationBehavior, validateAllProperties: false, predicate);
     }
 
     /// <summary>
@@ -520,6 +542,7 @@ public static partial class ObjectGraphValidator
     /// </remarks>
     /// <param name="instance">The object instance to test.  It cannot be null.</param>
     /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.  It cannot be <c>null</c>.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <param name="validateAllProperties">If <c>true</c>, also evaluates all properties of the object (this process is not
     /// recursive over properties of the properties).</param>
     /// <exception cref="ArgumentNullException">When <paramref name="instance"/> is null.</exception>
@@ -533,8 +556,9 @@ public static partial class ObjectGraphValidator
     public static void ValidateObject(
         object instance,
         ValidationContext validationContext,
+        AsyncValidationBehavior asyncValidationBehavior,
         bool validateAllProperties)
-        => ValidateObject(instance, validationContext, validateAllProperties, predicate: null);
+        => ValidateObject(instance, validationContext, asyncValidationBehavior, validateAllProperties, predicate: null);
 
     /// <summary>
     /// Throws a <see cref="ValidationException"/> if the given object instance is not valid.
@@ -545,6 +569,7 @@ public static partial class ObjectGraphValidator
     /// </remarks>
     /// <param name="instance">The object instance to test.  It cannot be null.</param>
     /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.  It cannot be <c>null</c>.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <param name="validateAllProperties">If <c>true</c>, also validates all the <paramref name="instance"/>'s properties.</param>
     /// <param name="predicate">A predicate to filter whether to recursively validate the properties of this type.</param>
     /// <exception cref="ArgumentNullException">When <paramref name="instance"/> is null.</exception>
@@ -558,12 +583,20 @@ public static partial class ObjectGraphValidator
     public static void ValidateObject(
         object instance,
         ValidationContext validationContext,
+        AsyncValidationBehavior asyncValidationBehavior,
         bool validateAllProperties,
         Func<Type, bool>? predicate)
     {
         validationContext.Items.Add(_validatedObjectsKey, new HashSet<object>());
         validationContext.Items.Add(_validateObjectOwnerKey, null);
-        TryValidateObjectRecursive(instance, validationContext, validationResults: null, validateAllProperties, predicate, throwOnFirstError: true);
+        TryValidateObjectRecursive(
+            instance,
+            validationContext,
+            validationResults: null,
+            asyncValidationBehavior,
+            validateAllProperties,
+            predicate,
+            throwOnFirstError: true);
     }
 
     /// <summary>
@@ -637,6 +670,7 @@ public static partial class ObjectGraphValidator
     /// </summary>
     /// <param name="instance">Object instance to test.</param>
     /// <param name="validationContext">Describes the object type.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <param name="validateAllProperties">if <c>true</c> also validates all properties.</param>
     /// <param name="breakOnFirstError">Whether to break on the first error or validate everything.</param>
     /// <returns>A collection of validation errors that result from validating the <paramref name="instance"/> with
@@ -651,6 +685,7 @@ public static partial class ObjectGraphValidator
     private static List<ValidationError> GetObjectValidationErrors(
         object instance,
         ValidationContext validationContext,
+        AsyncValidationBehavior asyncValidationBehavior,
         bool validateAllProperties,
         bool breakOnFirstError)
     {
@@ -662,7 +697,7 @@ public static partial class ObjectGraphValidator
         Debug.Assert(instance != null);
 
         // Step 1: Validate the object properties' validation attributes
-        List<ValidationError> errors = GetObjectPropertyValidationErrors(instance!, validationContext, validateAllProperties, breakOnFirstError);
+        List<ValidationError> errors = GetObjectPropertyValidationErrors(instance!, validationContext, asyncValidationBehavior, validateAllProperties, breakOnFirstError);
 
         // We only proceed to Step 2 if there are no errors
         if (errors.Count > 0)
@@ -672,7 +707,7 @@ public static partial class ObjectGraphValidator
 
         // Step 2: Validate the object's validation attributes
         IEnumerable<ValidationAttribute> attributes = _store.GetTypeValidationAttributes(validationContext);
-        errors.AddRange(GetValidationErrors(instance, validationContext, attributes, breakOnFirstError));
+        errors.AddRange(GetValidationErrors(instance, validationContext, attributes, asyncValidationBehavior, breakOnFirstError));
 
         // We only proceed to Step 3 if there are no errors
         if (errors.Count > 0)
@@ -705,6 +740,7 @@ public static partial class ObjectGraphValidator
     /// </summary>
     /// <param name="instance">Object instance to test.</param>
     /// <param name="validationContext">Describes the object type.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <param name="validateAllProperties">If <c>true</c>, evaluates all the properties, otherwise just checks that
     /// ones marked with <see cref="RequiredAttribute"/> are not null.</param>
     /// <param name="breakOnFirstError">Whether to break on the first error or validate everything.</param>
@@ -715,6 +751,7 @@ public static partial class ObjectGraphValidator
     private static List<ValidationError> GetObjectPropertyValidationErrors(
         object instance,
         ValidationContext validationContext,
+        AsyncValidationBehavior asyncValidationBehavior,
         bool validateAllProperties,
         bool breakOnFirstError)
     {
@@ -729,7 +766,7 @@ public static partial class ObjectGraphValidator
             if (validateAllProperties)
             {
                 // validate all validation attributes on this property
-                errors.AddRange(GetValidationErrors(property.Value, property.Key, attributes, breakOnFirstError));
+                errors.AddRange(GetValidationErrors(property.Value, property.Key, attributes, asyncValidationBehavior, breakOnFirstError));
             }
             else
             {
@@ -869,6 +906,7 @@ public static partial class ObjectGraphValidator
     /// <param name="value">The value to pass to the validation attributes.</param>
     /// <param name="validationContext">Describes the type/member being evaluated.</param>
     /// <param name="attributes">The validation attributes to evaluate.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <param name="breakOnFirstError">Whether or not to break on the first validation failure.  A
     /// <see cref="RequiredAttribute"/> failure will always abort with that sole failure.</param>
     /// <returns>The collection of validation errors.</returns>
@@ -877,6 +915,7 @@ public static partial class ObjectGraphValidator
         object? value,
         ValidationContext validationContext,
         IEnumerable<ValidationAttribute> attributes,
+        AsyncValidationBehavior asyncValidationBehavior,
         bool breakOnFirstError)
     {
         if (validationContext == null)
@@ -890,7 +929,7 @@ public static partial class ObjectGraphValidator
         RequiredAttribute? required = attributes.FirstOrDefault(a => a is RequiredAttribute) as RequiredAttribute;
         if (required != null)
         {
-            var result = TryValidate(value, validationContext, required, out var validationError);
+            var result = TryValidate(value, validationContext, required, asyncValidationBehavior, out var validationError);
             if (!result)
             {
                 errors.Add(validationError!);
@@ -903,7 +942,7 @@ public static partial class ObjectGraphValidator
         {
             if (attr != required)
             {
-                var result = TryValidate(value, validationContext, attr, out var validationError);
+                var result = TryValidate(value, validationContext, attr, asyncValidationBehavior, out var validationError);
                 if (!result)
                 {
                     errors.Add(validationError!);
@@ -940,6 +979,7 @@ public static partial class ObjectGraphValidator
     /// <param name="instance">The object instance to test.  It cannot be null.</param>
     /// <param name="validationContext">Describes the object to validate and provides services and context for the validators.</param>
     /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult"/>s for the failures.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <param name="validateAllProperties">If <c>true</c>, also evaluates all properties of the object (this process is not
     /// recursive over properties of the properties).</param>
     /// <param name="predicate">A predicate to filter whether to recursively validate the properties of this type.</param>
@@ -953,6 +993,7 @@ public static partial class ObjectGraphValidator
         object instance,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
+        AsyncValidationBehavior asyncValidationBehavior,
         bool validateAllProperties,
         Func<Type, bool>? predicate,
         bool throwOnFirstError)
@@ -980,7 +1021,12 @@ public static partial class ObjectGraphValidator
         bool isValid = true;
         bool breakOnFirstError = (validationResults == null);
 
-        foreach (ValidationError err in GetObjectValidationErrors(instance, validationContext, validateAllProperties, breakOnFirstError))
+        foreach (ValidationError err in GetObjectValidationErrors(
+            instance,
+            validationContext,
+            asyncValidationBehavior,
+            validateAllProperties,
+            breakOnFirstError))
         {
             if (throwOnFirstError) err.ThrowValidationException();
 
@@ -993,7 +1039,14 @@ public static partial class ObjectGraphValidator
 
         if (!isValid && breakOnFirstError) return isValid;
 
-        var propertyObjectsAreValid = TryValidatePropertyObjects(instance, validationContext, validationResults, validateAllProperties, predicate, throwOnFirstError);
+        var propertyObjectsAreValid = TryValidatePropertyObjects(
+            instance,
+            validationContext,
+            validationResults,
+            asyncValidationBehavior,
+            validateAllProperties,
+            predicate,
+            throwOnFirstError);
 
         if (isValid && !propertyObjectsAreValid) isValid = false;
 
@@ -1025,6 +1078,7 @@ public static partial class ObjectGraphValidator
     /// <param name="instance">The properties of object instance to test.  It cannot be null.</param>
     /// <param name="validationContext">Describes the object to validate and provides services and context for the validators.</param>
     /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult"/>s for the failures.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/>.</param>
     /// <param name="validateAllProperties">If <c>true</c>, also evaluates all properties of the object (this process is not
     /// recursive over properties of the properties).</param>
     /// <param name="predicate">A predicate to filter whether to recursively validate the properties of this type.</param>
@@ -1038,6 +1092,7 @@ public static partial class ObjectGraphValidator
         object instance,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
+        AsyncValidationBehavior asyncValidationBehavior,
         bool validateAllProperties,
         Func<Type, bool>? predicate,
         bool throwOnFirstError)
@@ -1052,6 +1107,7 @@ public static partial class ObjectGraphValidator
                 propertyObject.Value,
                 propertyObject.Key,
                 validationResults,
+                asyncValidationBehavior,
                 validateAllProperties,
                 predicate,
                 throwOnFirstError);
@@ -1071,6 +1127,7 @@ public static partial class ObjectGraphValidator
                     instance,
                     validationContext,
                     validationResults,
+                    asyncValidationBehavior,
                     validateAllProperties,
                     predicate,
                     throwOnFirstError,
@@ -1089,6 +1146,7 @@ public static partial class ObjectGraphValidator
         object instance,
         ValidationContext validationContext,
         ValidationResultStore? validationResults,
+        AsyncValidationBehavior asyncValidationBehavior,
         bool validateAllProperties,
         Func<Type, bool>? predicate,
         bool throwOnFirstError,
@@ -1104,6 +1162,7 @@ public static partial class ObjectGraphValidator
                 validationContext,
                 new FieldIdentifier(instance, index, (FieldIdentifier?)validationContext.Items[_validateObjectOwnerKey])),
             validationResults,
+            asyncValidationBehavior,
             validateAllProperties,
             predicate,
             throwOnFirstError);
@@ -1115,6 +1174,7 @@ public static partial class ObjectGraphValidator
     /// <param name="value">The value to be tested for validity.</param>
     /// <param name="validationContext">Describes the property member to validate.</param>
     /// <param name="attribute">The validation attribute to test.</param>
+    /// <param name="asyncValidationBehavior">The <see cref="AsyncValidationBehavior"/></param>
     /// <param name="validationError">
     ///     The validation error that occurs during validation.  Will be <c>null</c> when the return
     ///     value is <c>true</c>.
@@ -1124,14 +1184,37 @@ public static partial class ObjectGraphValidator
         object? value,
         ValidationContext validationContext,
         ValidationAttribute attribute,
+        AsyncValidationBehavior asyncValidationBehavior,
 #if NET6_0_OR_GREATER
         [NotNullWhen(false)]
 #endif
-    out ValidationError? validationError)
+        out ValidationError? validationError)
     {
+#if NET5_0_OR_GREATER
+        if (!Enum.IsDefined(asyncValidationBehavior))
+#else
+        if (!Enum.IsDefined(typeof(AsyncValidationBehavior), asyncValidationBehavior))
+#endif
+        {
+            throw new ArgumentException("Undefined value.", nameof(asyncValidationBehavior));
+        }
+
         Debug.Assert(validationContext != null);
 
-        var validationResult = attribute.GetValidationResult(value, validationContext);
+        ValidationResult? validationResult = null;
+
+        if (attribute is AsyncValidationAttribute asyncAttribute)
+        {
+            validationResult = asyncValidationBehavior switch
+            {
+                AsyncValidationBehavior.Throw => attribute.GetValidationResult(value, validationContext),
+                AsyncValidationBehavior.Ignore => ValidationResult.Success,
+                AsyncValidationBehavior.TrySynchronously => TryValidateAsyncValidationSynchronously(value, validationContext!, asyncAttribute),
+                _ => null, // NEVER TRUE
+            };
+        }
+        else validationResult = attribute.GetValidationResult(value, validationContext);
+
         if (validationResult != ValidationResult.Success)
         {
             validationError = new ValidationError(attribute, value, validationResult!, validationContext!);
@@ -1140,6 +1223,44 @@ public static partial class ObjectGraphValidator
 
         validationError = null;
         return true;
+
+        static ValidationResult? TryValidateAsyncValidationSynchronously(
+            object? value,
+            ValidationContext validationContext,
+            AsyncValidationAttribute asyncAttribute)
+        {
+            ValidationResult? result = null;
+            ManualResetEventSlimWithAwaiterSupport? mres = null;
+            Exception? exception = null;
+
+            try
+            {
+#pragma warning disable CA2012 // Use ValueTasks correctly
+                var resultTask = asyncAttribute.GetValidationResultAsync(value, validationContext);
+#pragma warning restore CA2012 // Use ValueTasks correctly
+
+                if (!resultTask.IsCompleted)
+                {
+                    mres = new ManualResetEventSlimWithAwaiterSupport();
+                    mres.Wait(resultTask.ConfigureAwait(false).GetAwaiter());
+
+                    Debug.Assert(resultTask.IsCompleted);
+                }
+
+                result = resultTask.Result;
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+            finally
+            {
+                mres?.Dispose();
+            }
+
+            if (exception is not null) throw exception;
+            return result;
+        }
     }
 
     private static void TransferErrorToResult(ValidationResultStore validationResultStore, ValidationError err)

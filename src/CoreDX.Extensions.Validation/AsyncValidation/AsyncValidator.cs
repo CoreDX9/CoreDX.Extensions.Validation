@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel;
 using System.Globalization;
 #if NET6_0_OR_GREATER
@@ -43,7 +42,7 @@ public static class AsyncValidator
     /// <param name="value">The value to test.</param>
     /// <param name="validationContext">Describes the property member to validate and provides services and context for the validators.</param>
     /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult"/>s for the failures.</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns><c>true</c> if the value is valid, <c>false</c> if any validation errors are encountered.</returns>
     /// <exception cref="ArgumentException">
     /// When the <see cref="ValidationContext.MemberName"/> of <paramref name="validationContext"/> is not a valid property.
@@ -94,7 +93,7 @@ public static class AsyncValidator
     /// <param name="instance">The object instance to test.  It cannot be <c>null</c>.</param>
     /// <param name="validationContext">Describes the object to validate and provides services and context for the validators.</param>
     /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult"/>s for the failures.</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns><c>true</c> if the object is valid, <c>false</c> if any validation errors are encountered.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="instance"/> is null.</exception>
     /// <exception cref="ArgumentException">When <paramref name="instance"/> doesn't match the
@@ -132,7 +131,7 @@ public static class AsyncValidator
     /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult"/>s for the failures.</param>
     /// <param name="validateAllProperties">If <c>true</c>, also evaluates all properties of the object (this process is not
     /// recursive over properties of the properties).</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns><c>true</c> if the object is valid, <c>false</c> if any validation errors are encountered.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="instance"/> is null.</exception>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
@@ -196,7 +195,7 @@ public static class AsyncValidator
     /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.</param>
     /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult"/>s for the failures.</param>
     /// <param name="validationAttributes">The list of <see cref="ValidationAttribute"/>s to validate this <paramref name="value"/> against.</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns><c>true</c> if the object is valid, <c>false</c> if any validation errors are encountered.</returns>
     public static async ValueTask<bool> TryValidateValue(
         object? value,
@@ -228,7 +227,7 @@ public static class AsyncValidator
     /// </summary>
     /// <param name="value">The value to test.</param>
     /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.  It cannot be <c>null</c>.</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
     /// <exception cref="ValidationException">When <paramref name="value"/> is invalid for this property.</exception>
 #if NET6_0_OR_GREATER
@@ -260,7 +259,7 @@ public static class AsyncValidator
     /// </remarks>
     /// <param name="instance">The object instance to test.  It cannot be null.</param>
     /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.  It cannot be <c>null</c>.</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <exception cref="ArgumentNullException">When <paramref name="instance"/> is null.</exception>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
     /// <exception cref="ArgumentException">When <paramref name="instance"/> doesn't match the
@@ -285,7 +284,7 @@ public static class AsyncValidator
     /// <param name="instance">The object instance to test.  It cannot be null.</param>
     /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.  It cannot be <c>null</c>.</param>
     /// <param name="validateAllProperties">If <c>true</c>, also validates all the <paramref name="instance"/>'s properties.</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <exception cref="ArgumentNullException">When <paramref name="instance"/> is null.</exception>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
     /// <exception cref="ArgumentException">When <paramref name="instance"/> doesn't match the
@@ -333,7 +332,7 @@ public static class AsyncValidator
     /// <param name="value">The value to test.  It cannot be null.</param>
     /// <param name="validationContext">Describes the object being tested.</param>
     /// <param name="validationAttributes">The list of <see cref="ValidationAttribute"/>s to validate against this instance.</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
     /// <exception cref="ValidationException">When <paramref name="value"/> is found to be invalid.</exception>
     public static async ValueTask ValidateValue(
@@ -430,7 +429,7 @@ public static class AsyncValidator
     /// <param name="validationContext">Describes the object type.</param>
     /// <param name="validateAllProperties">if <c>true</c> also validates all properties.</param>
     /// <param name="breakOnFirstError">Whether to break on the first error or validate everything.</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>A collection of validation errors that result from validating the <paramref name="instance"/> with
     /// the given <paramref name="validationContext"/>.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="instance"/> is null.</exception>
@@ -524,7 +523,7 @@ public static class AsyncValidator
     /// <param name="validateAllProperties">If <c>true</c>, evaluates all the properties, otherwise just checks that
     /// ones marked with <see cref="RequiredAttribute"/> are not null.</param>
     /// <param name="breakOnFirstError">Whether to break on the first error or validate everything.</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>A list of <see cref="ValidationError"/> instances.</returns>
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(_validationInstanceTypeNotStaticallyDiscovered)]
@@ -614,7 +613,7 @@ public static class AsyncValidator
     /// <param name="attributes">The validation attributes to evaluate.</param>
     /// <param name="breakOnFirstError">Whether or not to break on the first validation failure.  A
     /// <see cref="RequiredAttribute"/> failure will always abort with that sole failure.</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>The collection of validation errors.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
     private static async ValueTask<List<ValidationError>> GetValidationErrorsAsync(
@@ -670,7 +669,7 @@ public static class AsyncValidator
     /// <param name="value">The value to be tested for validity.</param>
     /// <param name="validationContext">Describes the property member to validate.</param>
     /// <param name="attribute">The validation attribute to test.</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <exception cref="ArgumentNullException">When <paramref name="validationContext"/> is null.</exception>
     private static async ValueTask<(bool success, ValidationError? error)> TryValidateAsync(
         object? value,

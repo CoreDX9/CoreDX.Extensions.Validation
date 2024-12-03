@@ -278,7 +278,7 @@ public sealed class CustomAsyncValidationAttribute : AsyncValidationAttribute
 
         // Method must return a Task<ValidationResult>(or ValueTask<ValidationResult>) or derived class
         if (!typeof(Task<ValidationResult>).IsAssignableFrom(methodInfo.ReturnType)
-            || !typeof(ValueTask<ValidationResult>).IsAssignableFrom(methodInfo.ReturnType))
+            && !typeof(ValueTask<ValidationResult>).IsAssignableFrom(methodInfo.ReturnType))
         {
             return string.Format(
                 CultureInfo.CurrentCulture,
@@ -307,19 +307,29 @@ public sealed class CustomAsyncValidationAttribute : AsyncValidationAttribute
         _isSingleArgumentMethod = (parameterInfos.Length == 1 && !_methodHasCancellationTokenArgument)
             || (parameterInfos.Length == 2 && _methodHasCancellationTokenArgument);
 
-        if (!_isSingleArgumentMethod)
+        if (parameterInfos.Length - (_methodHasCancellationTokenArgument ? 1 : 0) - (_isSingleArgumentMethod ? 1 : 2) != 0
+            || (!_isSingleArgumentMethod && parameterInfos[1].ParameterType != typeof(ValidationContext)))
         {
-            if (!(parameterInfos.Length == 2 && !_methodHasCancellationTokenArgument)
-                || !(parameterInfos.Length == 3 && _methodHasCancellationTokenArgument)
-                || (parameterInfos[2].ParameterType != typeof(ValidationContext)))
-            {
-                return string.Format(
-                    CultureInfo.CurrentCulture,
-                    "The CustomValidationAttribute method '{0}' in type '{1}' must match the expected signature: public static Task<ValidationResult>(or ValueTask<ValidationResult>) {0}(object value, ValidationContext context) or public static ValidationResult {0}(object value, ValidationContext context, CancellationToken cancellationToken).  The value can be strongly typed.  The ValidationContext parameter is optional.",
-                    Method,
-                    ValidatorType.Name);
-            }
+            return string.Format(
+                CultureInfo.CurrentCulture,
+                "The CustomValidationAttribute method '{0}' in type '{1}' must match the expected signature: public static Task<ValidationResult>(or ValueTask<ValidationResult>) {0}(object value, ValidationContext context) or public static ValidationResult {0}(object value, ValidationContext context, CancellationToken cancellationToken).  The value can be strongly typed.  The ValidationContext parameter is optional.",
+                Method,
+                ValidatorType.Name);
         }
+
+        //if (!_isSingleArgumentMethod)
+        //{
+        //    if (!(parameterInfos.Length == 2 && !_methodHasCancellationTokenArgument)
+        //        || !(parameterInfos.Length == 3 && _methodHasCancellationTokenArgument)
+        //        || (parameterInfos[1].ParameterType != typeof(ValidationContext)))
+        //    {
+        //        return string.Format(
+        //            CultureInfo.CurrentCulture,
+        //            "The CustomValidationAttribute method '{0}' in type '{1}' must match the expected signature: public static Task<ValidationResult>(or ValueTask<ValidationResult>) {0}(object value, ValidationContext context) or public static ValidationResult {0}(object value, ValidationContext context, CancellationToken cancellationToken).  The value can be strongly typed.  The ValidationContext parameter is optional.",
+        //            Method,
+        //            ValidatorType.Name);
+        //    }
+        //}
 
         _methodInfo = methodInfo;
         _firstParameterType = parameterInfos[0].ParameterType;

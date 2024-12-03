@@ -38,6 +38,7 @@ bool isValid = await ObjectGraphValidator.TryValidateObjectAsync(objectToBeValid
 ## Main Types
 The main types provided by this library are:
 * `CoreDX.Extensions.ComponentModel.DataAnnotations.AsyncValidationAttribute`
+* `CoreDX.Extensions.ComponentModel.DataAnnotations.CustomAsyncValidationAttribute`
 * `CoreDX.Extensions.ComponentModel.DataAnnotations.IAsyncValidatableObject`
 * `CoreDX.Extensions.ComponentModel.DataAnnotations.AsyncValidator`
 * `CoreDX.Extensions.ComponentModel.DataAnnotations.ObjectGraphValidator`

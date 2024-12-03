@@ -43,7 +43,7 @@ public class MyModel : PageModel
 
 ## Main Types
 The main types provided by this library are:
-* `CoreDX.Extensions.AspNetCore.Mvc.ModelBinding.Validation.AsyncParamterBinder`
+* `CoreDX.Extensions.AspNetCore.Mvc.ModelBinding.AsyncParamterBinder`
 * `CoreDX.Extensions.AspNetCore.Mvc.ModelBinding.Validation.IAsyncObjectModelValidator`
 
 ## Related Packages

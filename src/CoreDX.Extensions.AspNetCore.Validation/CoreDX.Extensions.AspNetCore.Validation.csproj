@@ -10,6 +10,7 @@
     <Title>ASP.NET Core MVC model binder with async model validation services.</Title>
     <PackageReleaseNotes>
       update: Update CoreDX.Extensions.Validation reference version.
+      refactoring: Change AsyncParamterBinder's namespace.
     </PackageReleaseNotes>
   </PropertyGroup>
     

@@ -15,6 +15,9 @@ internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrate
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_BoundProperties")]
     internal extern static IReadOnlyList<ModelMetadata> GetBoundProperties(ModelMetadata modelMetadata);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_BoundConstructorParameterMapping")]
+    internal extern static IReadOnlyDictionary<ModelMetadata, ModelMetadata> GetBoundConstructorParameterMapping(ModelMetadata modelMetadata);
 #endif
 
     /// <summary>
@@ -117,9 +120,12 @@ internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrate
                 {
 #pragma warning disable CS8602 // 解引用可能出现空引用。
                     //_modelMetadata.BoundConstructorParameterMapping
+#if NET8_0_OR_GREATER
+                    var parametersPerProperty = GetBoundConstructorParameterMapping(_modelMetadata);
+#else
                     var parametersPerProperty = _modelMetadata.GetType().GetProperty("BoundConstructorParameterMapping", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
                         .GetValue(_modelMetadata) as IReadOnlyDictionary<ModelMetadata, ModelMetadata>;
-
+#endif
                     if (!parametersPerProperty.TryGetValue(parameter, out var property))
                     {
                         throw new InvalidOperationException(_modelMetadata.ModelType.Name);

@@ -1,11 +1,22 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.Collections;
+#if NET8_0_OR_GREATER
+using System.Runtime.CompilerServices;
+#endif
 
 namespace CoreDX.Extensions.AspNetCore.Mvc.ModelBinding.Validation;
 
 internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrategy
 {
+#if NET8_0_OR_GREATER
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(ThrowIfRecordTypeHasValidationOnProperties))]
+    internal extern static void ThrowIfRecordTypeHasValidationOnProperties(ModelMetadata modelMetadata);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_BoundProperties")]
+    internal extern static IReadOnlyList<ModelMetadata> GetBoundProperties(ModelMetadata modelMetadata);
+#endif
+
     /// <summary>
     /// Gets an instance of <see cref="DefaultComplexObjectValidationStrategy"/>.
     /// </summary>
@@ -51,15 +62,22 @@ internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrate
             }
             else
             {
+#if NET8_0_OR_GREATER
+                ThrowIfRecordTypeHasValidationOnProperties(_modelMetadata);
+#else
 #pragma warning disable CS8602 // 解引用可能出现空引用。
                 //_modelMetadata.ThrowIfRecordTypeHasValidationOnProperties();
                 _modelMetadata.GetType().GetMethod("ThrowIfRecordTypeHasValidationOnProperties", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
                     .Invoke(modelMetadata, null);
 #pragma warning restore CS8602 // 解引用可能出现空引用。
-
+#endif
                 _parameters = _modelMetadata.BoundConstructor.BoundConstructorParameters!;
             }
 
+#if NET8_0_OR_GREATER
+            _properties = GetBoundProperties(_modelMetadata);
+            _count = _properties.Count + _parameters.Count;
+#else
 #pragma warning disable CS8602 // 解引用可能出现空引用。
 #pragma warning disable CS8601 // 引用类型赋值可能为 null。
             //_properties = _modelMetadata.BoundProperties;
@@ -68,7 +86,7 @@ internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrate
 #pragma warning restore CS8601 // 引用类型赋值可能为 null。
             _count = _properties.Count + _parameters.Count;
 #pragma warning restore CS8602 // 解引用可能出现空引用。
-
+#endif
             _index = -1;
         }
 

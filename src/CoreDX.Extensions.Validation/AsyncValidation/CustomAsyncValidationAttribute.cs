@@ -58,6 +58,8 @@ namespace CoreDX.Extensions.ComponentModel.DataAnnotations;
     AttributeTargets.Parameter, AllowMultiple = true)]
 public sealed class CustomAsyncValidationAttribute : AsyncValidationAttribute
 {
+    private const string _parameterInvalidMessageTemplate = "The CustomValidationAttribute method '{0}' in type '{1}' must match the expected signature: public static Task<ValidationResult>(or ValueTask<ValidationResult>) {0}(object value, ValidationContext context, CancellationToken cancellationToken).  The value can be strongly typed.  The ValidationContext and CancellationToken parameter are optional.";
+
     #region Member Fields
 
     private readonly Lazy<string?> _malformedErrorMessage;
@@ -294,7 +296,7 @@ public sealed class CustomAsyncValidationAttribute : AsyncValidationAttribute
         {
             return string.Format(
                 CultureInfo.CurrentCulture,
-                "The CustomValidationAttribute method '{0}' in type '{1}' must match the expected signature: public static Task<ValidationResult>(or ValueTask<ValidationResult>) {0}(object value, ValidationContext context) or public static ValidationResult {0}(object value, ValidationContext context, CancellationToken cancellationToken).  The value can be strongly typed.  The ValidationContext parameter is optional.",
+                _parameterInvalidMessageTemplate,
                 Method,
                 ValidatorType.Name);
         }
@@ -312,24 +314,10 @@ public sealed class CustomAsyncValidationAttribute : AsyncValidationAttribute
         {
             return string.Format(
                 CultureInfo.CurrentCulture,
-                "The CustomValidationAttribute method '{0}' in type '{1}' must match the expected signature: public static Task<ValidationResult>(or ValueTask<ValidationResult>) {0}(object value, ValidationContext context) or public static ValidationResult {0}(object value, ValidationContext context, CancellationToken cancellationToken).  The value can be strongly typed.  The ValidationContext parameter is optional.",
+                _parameterInvalidMessageTemplate,
                 Method,
                 ValidatorType.Name);
         }
-
-        //if (!_isSingleArgumentMethod)
-        //{
-        //    if (!(parameterInfos.Length == 2 && !_methodHasCancellationTokenArgument)
-        //        || !(parameterInfos.Length == 3 && _methodHasCancellationTokenArgument)
-        //        || (parameterInfos[1].ParameterType != typeof(ValidationContext)))
-        //    {
-        //        return string.Format(
-        //            CultureInfo.CurrentCulture,
-        //            "The CustomValidationAttribute method '{0}' in type '{1}' must match the expected signature: public static Task<ValidationResult>(or ValueTask<ValidationResult>) {0}(object value, ValidationContext context) or public static ValidationResult {0}(object value, ValidationContext context, CancellationToken cancellationToken).  The value can be strongly typed.  The ValidationContext parameter is optional.",
-        //            Method,
-        //            ValidatorType.Name);
-        //    }
-        //}
 
         _methodInfo = methodInfo;
         _firstParameterType = parameterInfos[0].ParameterType;

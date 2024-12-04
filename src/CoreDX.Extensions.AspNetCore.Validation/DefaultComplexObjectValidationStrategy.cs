@@ -65,31 +65,32 @@ internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrate
             }
             else
             {
+                //_modelMetadata.ThrowIfRecordTypeHasValidationOnProperties();
 #if NET8_0_OR_GREATER
                 ThrowIfRecordTypeHasValidationOnProperties(_modelMetadata);
 #else
-#pragma warning disable CS8602 // 解引用可能出现空引用。
-                //_modelMetadata.ThrowIfRecordTypeHasValidationOnProperties();
-                _modelMetadata.GetType().GetMethod("ThrowIfRecordTypeHasValidationOnProperties", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                _modelMetadata.GetType()
+                    .GetMethod(
+                        "ThrowIfRecordTypeHasValidationOnProperties",
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
                     .Invoke(modelMetadata, null);
-#pragma warning restore CS8602 // 解引用可能出现空引用。
 #endif
+
                 _parameters = _modelMetadata.BoundConstructor.BoundConstructorParameters!;
             }
 
+            //_properties = _modelMetadata.BoundProperties;
 #if NET8_0_OR_GREATER
             _properties = GetBoundProperties(_modelMetadata);
-            _count = _properties.Count + _parameters.Count;
 #else
-#pragma warning disable CS8602 // 解引用可能出现空引用。
-#pragma warning disable CS8601 // 引用类型赋值可能为 null。
-            //_properties = _modelMetadata.BoundProperties;
-            _properties = _modelMetadata.GetType().GetProperty("BoundProperties", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-                .GetValue(modelMetadata) as IReadOnlyList<ModelMetadata>;
-#pragma warning restore CS8601 // 引用类型赋值可能为 null。
-            _count = _properties.Count + _parameters.Count;
-#pragma warning restore CS8602 // 解引用可能出现空引用。
+            _properties = (_modelMetadata.GetType()
+                .GetProperty(
+                    "BoundProperties",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                .GetValue(modelMetadata) as IReadOnlyList<ModelMetadata>)!;
 #endif
+
+            _count = _properties!.Count + _parameters.Count;
             _index = -1;
         }
 

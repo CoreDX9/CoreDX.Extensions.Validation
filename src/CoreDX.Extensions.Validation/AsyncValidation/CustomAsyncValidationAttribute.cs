@@ -12,10 +12,10 @@ namespace CoreDX.Extensions.ComponentModel.DataAnnotations;
 /// <summary>
 ///     Validation attribute that executes a user-supplied method at runtime, using one of these signatures:
 ///     <para>
-///         public static <see cref="ValidationResult" /> Method(object value) { ... }
+///         public static <see cref="ValueTask{TResult}" />(or <see cref="Task{TResult}" />) of <see cref="ValidationResult"/> Method(object value, <see cref="CancellationToken"/> cancellationToken) { ... }
 ///     </para>
 ///     <para>
-///         public static <see cref="ValidationResult" /> Method(object value, <see cref="ValidationContext" /> context) {
+///         public static <see cref="ValueTask{TResult}" />(or <see cref="Task{TResult}" />) of <see cref="ValidationResult"/> Method(object value, <see cref="ValidationContext" /> context, <see cref="CancellationToken"/> cancellationToken) {
 ///         ... }
 ///     </para>
 ///     <para>
@@ -24,14 +24,14 @@ namespace CoreDX.Extensions.ComponentModel.DataAnnotations;
 /// </summary>
 /// <remarks>
 ///     This validation attribute is used to invoke custom logic to perform validation at runtime.
-///     Like any other <see cref="ValidationAttribute" />, its <see cref="IsValidAsync(object, ValidationContext, CancellationToken)" />
+///     Like any other <see cref="AsyncValidationAttribute" />, its <see cref="IsValidAsync(object, ValidationContext, CancellationToken)" />
 ///     method is invoked to perform validation.  This implementation simply redirects that call to the method
 ///     identified by <see cref="Method" /> on a type identified by <see cref="ValidatorType" />
 ///     <para>
 ///         The supplied <see cref="ValidatorType" /> cannot be null, and it must be a public type.
 ///     </para>
 ///     <para>
-///         The named <see cref="Method" /> must be public, static, return <see cref="ValidationResult" /> and take at
+///         The named <see cref="Method" /> must be public, static, return <see cref="ValueTask{TResult}" />(or <see cref="Task{TResult}" />) of <see cref="ValidationResult"/> and take at
 ///         least one input parameter for the value to be validated.  This value parameter may be strongly typed.
 ///         Type conversion will be attempted if clients pass in a value of a different type.
 ///     </para>

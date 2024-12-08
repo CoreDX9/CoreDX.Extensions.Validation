@@ -183,7 +183,7 @@ public static class AsyncValidatiorExtension
     /// <param name="prefix">The key to use when looking up information in <see cref="ActionContext.ModelState"/>.</param>
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns><c>true</c> if the <see cref="ActionContext.ModelState"/> is valid;<c>false</c> otherwise.</returns>
-    private static async ValueTask TryValidateModelAsync(
+    private static Task TryValidateModelAsync(
         ActionContext context,
         object model,
         string? prefix,
@@ -194,7 +194,7 @@ public static class AsyncValidatiorExtension
 
         var validator = context.HttpContext.RequestServices.GetRequiredService<IAsyncObjectModelValidator>();
 
-        await validator.ValidateAsync(
+        return validator.ValidateAsync(
             context,
             validationState: null,
             prefix: prefix ?? string.Empty,

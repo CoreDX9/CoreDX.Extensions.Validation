@@ -23,14 +23,14 @@ internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<P
         }
     }
 
-    public async ValueTask<Dictionary<string, ValidationResultStore>> ValidateAsync(IDictionary<string, object?> arguments)
+    public async ValueTask<Dictionary<string, ValidationResultStore>> ValidateAsync(IDictionary<string, object?> arguments, CancellationToken cancellationToken = default)
     {
         Dictionary<string, ValidationResultStore> result = [];
         foreach (var argument in arguments)
         {
             var metadata = _metadatas.FirstOrDefault(md => md.ParameterName == argument.Key);
             if (metadata is null) throw new InvalidOperationException($"Parameter named {argument.Key} does not exist.");
-            result.TryAdd(metadata.ParameterName, await metadata.ValidateAsync(arguments));
+            result.TryAdd(metadata.ParameterName, await metadata.ValidateAsync(argument.Value, cancellationToken));
         }
         return result;
     }

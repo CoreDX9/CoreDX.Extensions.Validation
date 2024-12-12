@@ -1,6 +1,7 @@
 ﻿using CoreDX.Extensions.AspNetCore.Http.Validation;
 using CoreDX.Extensions.AspNetCore.Http.Validation.Localization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
@@ -108,8 +109,8 @@ public static class EndpointParameterValidationExtensions
 
                     try
                     {
-                        var result = await metadata.ValidateAsync(arguments);
-                        if (result != null) invocationContext.HttpContext.Items.Add(_validationResultItemName, result);
+                        var results = await metadata.ValidateAsync(arguments);
+                        if (results != null) invocationContext.HttpContext.Items.Add(_validationResultItemName, results);
                     }
                     catch (Exception e)
                     {
@@ -172,12 +173,14 @@ public static class EndpointParameterValidationExtensions
         this HttpContext httpContext,
         params IEnumerable<KeyValuePair<string, object?>> arguments)
     {
-        ArgumentNullException.ThrowIfNull(httpContext);
+         ArgumentNullException.ThrowIfNull(httpContext);
 
         var endpoint = httpContext.GetEndpoint();
         var metadata = endpoint?.Metadata
             .FirstOrDefault(md => md is EndpointBindingParameterValidationMetadata) as EndpointBindingParameterValidationMetadata;
         if (metadata is null) return false;
+
+        if (!arguments.Any()) return true;
 
         HashSet<string> names = [];
         foreach (var name in arguments.Select(arg => arg.Key))
@@ -186,18 +189,35 @@ public static class EndpointParameterValidationExtensions
             if (!names.Add(name)) throw new ArgumentException("Argument's name must be unique.", nameof(arguments));
         }
 
+        var currentResults = httpContext.GetEndpointParameterDataAnnotationsValidationResultsCore();
         var newResults = await metadata.ValidateAsync(arguments.ToDictionary(arg => arg.Key, arg => arg.Value));
-        if (newResults != null)
+
+        if (newResults is null)
         {
-            var currentResults = httpContext.GetEndpointParameterDataAnnotationsValidationResultsCore();
-            if (currentResults is null)
+            if (currentResults != null)
             {
-                httpContext.Items.Remove(_validationResultItemName);
-                currentResults = new();
+                foreach (var argument in arguments)
+                {
+                    currentResults.Remove(argument.Key);
+                }
+            }
+        }
+        else
+        {
+            if (currentResults != null)
+            {
+                foreach (var argument in arguments)
+                {
+                    if (!newResults.Keys.Any(key => key == argument.Key)) currentResults.Remove(argument.Key);
+                }
+            }
+            else
+            {
+                currentResults = [];
                 httpContext.Items.Add(_validationResultItemName, currentResults);
             }
 
-            foreach (var result in newResults) currentResults[result.Key] = result.Value;
+            foreach (var newResult in newResults) currentResults[newResult.Key] = newResult.Value;
         }
 
         return true;

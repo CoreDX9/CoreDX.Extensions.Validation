@@ -1,7 +1,6 @@
 ﻿using CoreDX.Extensions.AspNetCore.Http.Validation;
 using CoreDX.Extensions.AspNetCore.Http.Validation.Localization;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.Extensions.DependencyInjection;

@@ -102,15 +102,21 @@ internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<P
                 {
                     if (validation is AsyncValidationAttribute asyncValidation)
                     {
-                        var result = (await asyncValidation.GetValidationResultAsync(argument, validationContext, cancellationToken))!;
-                        result = new LocalizableValidationResult(result.ErrorMessage, result.MemberNames, validation, validationContext);
-                        results.Add(result);
+                        var result = await asyncValidation.GetValidationResultAsync(argument, validationContext, cancellationToken);
+                        if (result != ValidationResult.Success)
+                        {
+                            result = new LocalizableValidationResult(result!.ErrorMessage, result.MemberNames, validation, validationContext);
+                            results.Add(result);
+                        }
                     }
                     else
                     {
-                        var result = validation.GetValidationResult(argument, validationContext)!;
-                        result = new LocalizableValidationResult(result.ErrorMessage, result.MemberNames, validation, validationContext);
-                        results.Add(result);
+                        var result = validation.GetValidationResult(argument, validationContext);
+                        if (result != ValidationResult.Success)
+                        {
+                            result = new LocalizableValidationResult(result!.ErrorMessage, result.MemberNames, validation, validationContext);
+                            results.Add(result);
+                        }
                     }
                 }
 

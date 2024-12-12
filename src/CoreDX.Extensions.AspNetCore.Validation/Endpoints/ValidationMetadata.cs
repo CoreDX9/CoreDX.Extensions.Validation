@@ -23,7 +23,7 @@ internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<P
         }
     }
 
-    public async ValueTask<Dictionary<string, ValidationResultStore>> ValidateAsync(IDictionary<string, object?> arguments, CancellationToken cancellationToken = default)
+    public async ValueTask<Dictionary<string, ValidationResultStore>?> ValidateAsync(IDictionary<string, object?> arguments, CancellationToken cancellationToken = default)
     {
         Dictionary<string, ValidationResultStore> result = [];
         foreach (var argument in arguments)
@@ -34,7 +34,7 @@ internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<P
             var argumentResults = await metadata.ValidateAsync(argument.Value, cancellationToken);
             if (argumentResults is not null) result.TryAdd(metadata.ParameterName, argumentResults);
         }
-        return result;
+        return result.Count > 0 ? result : null;
     }
 
     public IEnumerator<ParameterValidationMetadata> GetEnumerator()

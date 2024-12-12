@@ -109,8 +109,7 @@ public static class EndpointParameterValidationExtensions
                     try
                     {
                         var result = await metadata.ValidateAsync(arguments);
-
-                        invocationContext.HttpContext.Items.Add(_validationResultItemName, result);
+                        if (result != null) invocationContext.HttpContext.Items.Add(_validationResultItemName, result);
                     }
                     catch (Exception e)
                     {
@@ -188,18 +187,17 @@ public static class EndpointParameterValidationExtensions
         }
 
         var newResults = await metadata.ValidateAsync(arguments.ToDictionary(arg => arg.Key, arg => arg.Value));
-
-        var currentResults = httpContext.GetEndpointParameterDataAnnotationsValidationResultsCore();
-        if (currentResults is null)
+        if (newResults != null)
         {
-            httpContext.Items.Remove(_validationResultItemName);
-            currentResults = new();
-            httpContext.Items.Add(_validationResultItemName, currentResults);
-        }
+            var currentResults = httpContext.GetEndpointParameterDataAnnotationsValidationResultsCore();
+            if (currentResults is null)
+            {
+                httpContext.Items.Remove(_validationResultItemName);
+                currentResults = new();
+                httpContext.Items.Add(_validationResultItemName, currentResults);
+            }
 
-        foreach (var result in newResults)
-        {
-            currentResults![result.Key] = result.Value;
+            foreach (var result in newResults) currentResults[result.Key] = result.Value;
         }
 
         return true;

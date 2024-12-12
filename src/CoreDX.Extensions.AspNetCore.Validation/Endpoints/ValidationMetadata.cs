@@ -130,9 +130,11 @@ internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<P
                     cancellationToken);
             }
 
-            var id = FieldIdentifier.GetFakeTopLevelObjectIdentifier(topName);
-
-            resultStore.Add(id, results);
+            if (results.Count > 0)
+            {
+                var id = FieldIdentifier.GetFakeTopLevelObjectIdentifier(topName);
+                resultStore.Add(id, results);
+            }
 
             return resultStore;
         }

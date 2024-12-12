@@ -95,7 +95,7 @@ app.UseEndpoints(endpoints =>
                 var results = httpContext.GetEndpointParameterDataAnnotationsValidationResults();
             
                 input.Text1 = "new string value";
-                someNumber = 7;
+                someNumber = 107;
             
                 // Try to revalidate and update validation results.
                 var validationProcessSuccess = await httpContext.TryValidateEndpointParameters([

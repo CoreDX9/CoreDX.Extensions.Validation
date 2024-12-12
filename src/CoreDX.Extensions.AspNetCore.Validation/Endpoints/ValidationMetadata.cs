@@ -30,7 +30,9 @@ internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<P
         {
             var metadata = _metadatas.FirstOrDefault(md => md.ParameterName == argument.Key);
             if (metadata is null) throw new InvalidOperationException($"Parameter named {argument.Key} does not exist.");
-            result.TryAdd(metadata.ParameterName, await metadata.ValidateAsync(argument.Value, cancellationToken));
+
+            var argumentResults = await metadata.ValidateAsync(argument.Value, cancellationToken);
+            if (argumentResults is not null) result.TryAdd(metadata.ParameterName, argumentResults);
         }
         return result;
     }
@@ -71,7 +73,7 @@ internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<P
         public string ParameterName => _parameterInfo.Name!;
         public string? DisplayName => _displayName;
 
-        public async ValueTask<ValidationResultStore> ValidateAsync(object? argument, CancellationToken cancellationToken = default)
+        public async ValueTask<ValidationResultStore?> ValidateAsync(object? argument, CancellationToken cancellationToken = default)
         {
             if (argument is not null && !argument.GetType().IsAssignableTo(_parameterInfo.ParameterType))
             {
@@ -136,7 +138,7 @@ internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<P
                 resultStore.Add(id, results);
             }
 
-            return resultStore;
+            return resultStore.Any() ? resultStore : null;
         }
     }
 }

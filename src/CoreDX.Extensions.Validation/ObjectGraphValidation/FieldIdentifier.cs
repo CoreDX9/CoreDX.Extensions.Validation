@@ -7,11 +7,29 @@ using System.Text;
 namespace CoreDX.Extensions.ComponentModel.DataAnnotations;
 
 /// <summary>
-/// Uniquely identifies a single field that can be edited. This may correspond to a property on a
-/// model object, or can be any other named value.
+/// Uniquely identifies a single field. This may correspond to a property on a model object, or can be any other named value.
 /// </summary>
+/// <remarks>
+/// If <see cref="Model"/> is value type, It's a new instance copied from original object.
+/// Directly modifying <see cref="Model"/> may not eliminate validation errors.
+/// </remarks>
 public sealed class FieldIdentifier : IEquatable<FieldIdentifier>
 {
+    /// <summary>
+    /// Gets the fake object to use as top level object like parameter or local variable.
+    /// </summary>
+    private static readonly object TopLevelObjectFaker = new();
+
+    /// <summary>
+    /// Gets the fake object identitier to use as top level object like parameter or local variable.
+    /// </summary>
+    /// <param name="fieldName">The name of the editable field.</param>
+    /// <returns>The field identifier.</returns>
+    public static FieldIdentifier GetFakeTopLevelObjectIdentifier(string fieldName)
+    {
+        return new(TopLevelObjectFaker, fieldName, null);
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="FieldIdentifier"/> class.
     /// </summary>
@@ -28,10 +46,12 @@ public sealed class FieldIdentifier : IEquatable<FieldIdentifier>
 
         Model = model ?? throw new ArgumentNullException(nameof(model));
 
+        CheckTopLevelObjectFaker(model, modelOwner);
+
         // Note that we do allow an empty string. This is used by some validation systems
         // as a place to store object-level (not per-property) messages.
         FieldName = fieldName ?? throw new ArgumentNullException(nameof(fieldName));
-        
+
         ModelOwner = modelOwner;
     }
 
@@ -50,6 +70,8 @@ public sealed class FieldIdentifier : IEquatable<FieldIdentifier>
 
         Model = model ?? throw new ArgumentNullException(nameof(model));
 
+        CheckTopLevelObjectFaker(model, modelOwner);
+
         if (enumerableElementIndex < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(enumerableElementIndex), "The index must be great than or equals 0.");
@@ -60,10 +82,28 @@ public sealed class FieldIdentifier : IEquatable<FieldIdentifier>
         ModelOwner = modelOwner;
     }
 
+    private static void CheckTopLevelObjectFaker(object model, FieldIdentifier? modelOwner)
+    {
+        if (model == TopLevelObjectFaker && modelOwner is not null)
+        {
+            throw new ArgumentException($"{nameof(modelOwner)} must be null when {nameof(model)} is {nameof(TopLevelObjectFaker)}", nameof(modelOwner));
+        }
+    }
+
     /// <summary>
     /// Gets the object that owns the editable field.
     /// </summary>
     public object Model { get; }
+
+    /// <summary>
+    /// Gets if the <see cref="Model"/> is value type and not original instance.
+    /// </summary>
+    public bool ModelIsCopiedInstanceOfValueType => Model.GetType().IsValueType;
+
+    /// <summary>
+    /// Gets if the <see cref="Model"/> is top level fake object.
+    /// </summary>
+    public bool ModelIsTopLevelFakeObject => Model == TopLevelObjectFaker;
 
     /// <summary>
     /// Gets the name of the editable field.
@@ -117,17 +157,25 @@ public sealed class FieldIdentifier : IEquatable<FieldIdentifier>
     public static bool operator !=(FieldIdentifier? left, FieldIdentifier? right) => !(left == right);
 
     /// <inheritdoc/>
-    public override string ToString()
+    public override string? ToString()
     {
+        if (ModelIsTopLevelFakeObject) return FieldName;
+
         var sb = new StringBuilder();
         var fieldIdentifier = this;
+        var chainHasTopLevelFaker = false;
         do
         {
             sb.Insert(0, fieldIdentifier.FieldName is not null ? $".{fieldIdentifier.FieldName}" : $"[{fieldIdentifier.EnumerableElementIndex}]");
-            fieldIdentifier = fieldIdentifier.ModelOwner;
-        } while (fieldIdentifier != null);
 
-        sb.Insert(0, "$");
+            if (chainHasTopLevelFaker is false && fieldIdentifier.ModelIsTopLevelFakeObject) chainHasTopLevelFaker = true;
+
+            fieldIdentifier = fieldIdentifier.ModelOwner;
+
+        } while (fieldIdentifier != null && !fieldIdentifier.ModelIsTopLevelFakeObject);
+
+        if (fieldIdentifier is null && !chainHasTopLevelFaker) sb.Insert(0, "$");
+        else if (fieldIdentifier!.ModelIsTopLevelFakeObject) sb.Insert(0, fieldIdentifier.FieldName);
 
         return sb.ToString();
     }

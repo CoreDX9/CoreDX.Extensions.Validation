@@ -97,6 +97,8 @@ namespace CoreDX.Extensions.Validation.Tests
 
             Assert.False(result);
 
+            // .NET 6.0 以上版本，$ 符号会通过编译特性参数自动替换为参数表达式，此处为变量名 instance
+
             // $.NameA 超长
             // $.B.IdB 超范围（因NameB的连带会显示2个错误）
             // $.B.NameB 异步失败（附带对IdB属性名的引用）
@@ -114,26 +116,26 @@ namespace CoreDX.Extensions.Validation.Tests
 
             var exception = Assert.Throws<InvalidOperationException>(() =>
             {
-                TryValidateObject(instance, new ValidationContext(instance), new ValidationResultStore(), AsyncValidationBehavior.Throw);
+                TryValidateObject(instance, new ValidationResultStore(), AsyncValidationBehavior.Throw);
             });
 
             Assert.Equal("Async validation called synchronously.", exception.Message);
 
             var resultStore2 = new ValidationResultStore();
-            TryValidateObject(instance, new ValidationContext(instance), resultStore2, AsyncValidationBehavior.TrySynchronously);
+            TryValidateObject(instance, resultStore2, AsyncValidationBehavior.TrySynchronously);
 
             Assert.Equal(13, resultStore2.Count());
 
             var resultStore3 = new ValidationResultStore();
-            TryValidateObject(instance, new ValidationContext(instance), resultStore3, AsyncValidationBehavior.Ignore);
+            TryValidateObject(instance, resultStore3, AsyncValidationBehavior.Ignore);
 
             Assert.Equal(9, resultStore3.Count());
 
-            static bool TryValidateObject(object obj, ValidationContext context, ValidationResultStore resultStore, AsyncValidationBehavior behavior)
+            static bool TryValidateObject(object instance, ValidationResultStore resultStore, AsyncValidationBehavior behavior)
             {
                 return ObjectGraphValidator.TryValidateObject(
-                    obj,
-                    context,
+                    instance,
+                    new ValidationContext(instance),
                     resultStore,
                     behavior,
                     true,

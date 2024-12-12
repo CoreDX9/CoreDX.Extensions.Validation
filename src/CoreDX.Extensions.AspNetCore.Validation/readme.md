@@ -1,5 +1,5 @@
 ## About
-Add async model validation services for Microsoft Asp.Net Core MVC.
+Add async model validation services for Microsoft Asp.Net Core MVC and Minimal-APIs.
 
 ## How to Use
 
@@ -38,6 +38,87 @@ public class MyModel : PageModel
         // TryValidateModel(Input) // This will ignore async validation attributes.
         await this.TryValidateModelAsync(Input);
     }
+}
+```
+
+3. Minimal-APIs's data annotations localization
+``` csharp
+// Add a localization services like this (package: CoreDX.Extensions.Localization.EntityFrameworkCore)
+services
+    .AddEntityFrameworkCoreLocalization<ApplicationDbContext,ApplicationLocalizationRecord>(static options =>
+    {
+        options.ResourcesPath = "Resources";
+        options.CreateLocalizationResourcesIfNotExist = true;
+    });
+
+// Or use localization services from MVC
+services
+    .AddMvc()
+    .AddDataAnnotationsLocalization();
+
+// Then add Minimal-APIs's localization services
+services.AddEndpointParameterDataAnnotationsLocalization();
+```
+
+4. Minimal-APIs's data annotations validation
+``` csharp
+public class CustomModel
+{
+    [Required]
+    [StringLength(42)]
+    public string Text1 { get; set; } = null!;
+
+    [MyCustomAsyncValidation]
+    public string? Text2 { get; set; }
+
+    [Required]
+    public InnerModel ComplexProperty { get; set; } = null!;
+
+    public class InnerModel
+    {
+        [Range(5, 10)]
+        public int Number { get; set; }
+    }
+}
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints
+        .MapPost(
+            "/api/test",
+            static async Task<Results<Ok, ValidationProblem>> (
+                [FromBody, Required] CustomModel input,
+                [FromQuery, Range(1, 100)] int someNumber,
+                HttpContext httpContext) =>
+            {
+                // Gets validation results from filter if called 'AddEndpointParameterDataAnnotations()'.
+                var results = httpContext.GetEndpointParameterDataAnnotationsValidationResults();
+            
+                input.Text1 = "new string value";
+                someNumber = 7;
+            
+                // Try to revalidate and update validation results.
+                var validationProcessSuccess = await httpContext.TryValidateEndpointParameters([
+                    new KeyValuePair<string, object?>(nameof(input), input),
+                    new KeyValuePair<string, object?>(nameof(someNumber), someNumber),
+                ]);
+            
+                // Gets validation problem details.
+                // If is added Minimal-APIs's localization services, will use localized error message.
+                var problemDetails = httpContext.GetEndpointParameterDataAnnotationsProblemDetails();
+
+                if (problemDetails?.Any() is true)
+                {
+                    return TypedResults.ValidationProblem(problemDetails);
+                }
+
+                return TypedResults.Ok();
+            }
+        )
+        // Adds parameter data annotations validation filter to endpoint.
+        .AddEndpointParameterDataAnnotations()
+        // If paramater has validation error, will return validation problem automatically.
+        .AddValidationProblemResult();
 }
 ```
 

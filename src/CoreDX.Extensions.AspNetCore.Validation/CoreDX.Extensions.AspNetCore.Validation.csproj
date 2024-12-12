@@ -4,13 +4,13 @@
     <TargetFrameworks>net9.0;net8.0;net7.0;net6.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageVersion>1.2.3</PackageVersion>
-    <PackageTags>ModelValidation AsyncModelValidation</PackageTags>
-    <Description>Model binder with async model validation services for ASP.NET Core MVC.</Description>
+    <PackageVersion>1.3.0</PackageVersion>
+    <PackageTags>ModelValidation AsyncModelValidation MVC RazorPages Minimal-APIs</PackageTags>
+    <Description>Model binder with async model validation services for ASP.NET Core MVC and Minimal-APIs.</Description>
     <Title>ASP.NET Core MVC model binder with async model validation services.</Title>
     <PackageReleaseNotes>
       update: Update CoreDX.Extensions.Validation reference version.
-      refactoring: Change AsyncParamterBinder's namespace.
+      add: Add minimal-apis's data annotations validation and results localization support.
     </PackageReleaseNotes>
   </PropertyGroup>
 

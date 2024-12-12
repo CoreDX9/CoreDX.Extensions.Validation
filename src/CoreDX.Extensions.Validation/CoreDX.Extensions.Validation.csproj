@@ -3,13 +3,12 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageVersion>1.1.2</PackageVersion>
+    <PackageVersion>1.1.3</PackageVersion>
     <PackageTags>DataAnnotation Validator AsyncValidator ObjectGraphValidator</PackageTags>
     <Description>Async validation and object graph validation extensions.</Description>
     <Title>New helper classes modified from System.ComponentModel.DataAnnotations.Validator to support async validation and object graph validation.</Title>
     <PackageReleaseNotes>
-      add: CustomAsyncValidationAttribute.
-      update: Object graph validator add parameter of type AsyncValidationBehavior.
+      add: Add parameter name and local variable name support on object graph validation. (For .NET 6.0+, the name can populate automatically using CallerArgumentExpressionAttribute.)
     </PackageReleaseNotes>
   </PropertyGroup>
 

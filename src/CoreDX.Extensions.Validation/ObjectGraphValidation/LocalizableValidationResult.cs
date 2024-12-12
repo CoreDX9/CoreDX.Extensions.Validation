@@ -29,27 +29,30 @@ public interface IAttributeValidationResultLocalizationMetadata
 /// </summary>
 public class LocalizableValidationResult : ValidationResult, IAttributeValidationResultLocalizationMetadata
 {
-    private readonly ValidationContext _context;
-
     /// <summary>
     /// Gets the <see cref="ValidationAttribute"/> for this validation result.
     /// </summary>
     public ValidationAttribute Attribute { get; }
 
     /// <summary>
+    /// Gets the <see cref="ValidationContext"/> for this validation result.
+    /// </summary>
+    public ValidationContext Context { get; }
+
+    /// <summary>
     /// Gets the member name.
     /// </summary>
-    public string? MemberName => _context.MemberName;
+    public string? MemberName => Context.MemberName;
 
     /// <summary>
     /// Gets the display name.
     /// </summary>
-    public string DisplayName => _context.DisplayName;
+    public string DisplayName => Context.DisplayName;
 
     /// <summary>
     /// Gets the type of the object being validated.
     /// </summary>
-    public Type InstanceObjectType => _context.ObjectType;
+    public Type InstanceObjectType => Context.ObjectType;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LocalizableValidationResult"/> class by using an error message and a list of members that have validation errors.
@@ -80,7 +83,7 @@ public class LocalizableValidationResult : ValidationResult, IAttributeValidatio
         : base(errorMessage, memberNames)
     {
         Attribute = attribute;
-        _context = context;
+        Context = context;
     }
 
     /// <inheritdoc />
@@ -90,6 +93,6 @@ public class LocalizableValidationResult : ValidationResult, IAttributeValidatio
         ValidationContext context) : base(validationResult)
     {
         Attribute = attribute;
-        _context = context;
+        Context = context;
     }
 }

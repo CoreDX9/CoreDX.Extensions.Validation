@@ -9,6 +9,7 @@ using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.IO.Pipelines;
 using System.Reflection;
@@ -284,25 +285,58 @@ public static class EndpointParameterValidationExtensions
         {
             if (result is LocalizableValidationResult localizable)
             {
+                var localizer = localizerFactory.Create(localizable.InstanceObjectType);
+                var displayName = GetDisplayName(localizable, localizer);
+
                 var adapter = adapters.FirstOrDefault(ap => localizable.Attribute.GetType().IsAssignableTo(ap.CanProcessAttributeType));
                 if (adapter != null
                     && !string.IsNullOrEmpty(localizable.Attribute.ErrorMessage)
                     && string.IsNullOrEmpty(localizable.Attribute.ErrorMessageResourceName)
                     && localizable.Attribute.ErrorMessageResourceType == null)
                 {
-                    var localizer = localizerFactory.Create(localizable.InstanceObjectType);
-
                     return localizer
                     [
                         localizable.Attribute.ErrorMessage,
-                        [localizable.DisplayName, .. adapter.GetLocalizationArguments(localizable.Attribute) ?? []]
+                        [displayName, .. adapter.GetLocalizationArguments(localizable.Attribute) ?? []]
                     ];
                 }
 
-                return localizable.Attribute.FormatErrorMessage(localizable.DisplayName);
+                return localizable.Attribute.FormatErrorMessage(displayName);
             }
 
             return result.ErrorMessage!;
+
+            static string GetDisplayName(LocalizableValidationResult localizable, IStringLocalizer localizer)
+            {
+                string? displayName = null;
+                ValidationAttributeStore store = ValidationAttributeStore.Instance;
+                DisplayAttribute? displayAttribute = null;
+                DisplayNameAttribute? displayNameAttribute = null;
+
+                if (string.IsNullOrEmpty(localizable.MemberName))
+                {
+                    displayAttribute = store.GetTypeDisplayAttribute(localizable.Context);
+                    displayNameAttribute = store.GetTypeDisplayNameAttribute(localizable.Context);
+                }
+                else if (store.IsPropertyContext(localizable.Context))
+                {
+                    displayAttribute = store.GetPropertyDisplayAttribute(localizable.Context);
+                    displayNameAttribute = store.GetPropertyDisplayNameAttribute(localizable.Context);
+                }
+
+                if (displayAttribute != null)
+                {
+                    displayName = displayAttribute.GetName();
+                }
+                else if (displayNameAttribute != null)
+                {
+                    displayName = displayNameAttribute.DisplayName;
+                }
+
+                return string.IsNullOrEmpty(displayName)
+                    ? localizable.DisplayName
+                    : localizer[displayName];
+            }
         }
     }
 

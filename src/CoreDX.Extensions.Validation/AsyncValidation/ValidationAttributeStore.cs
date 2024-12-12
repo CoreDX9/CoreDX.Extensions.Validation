@@ -16,18 +16,18 @@ namespace CoreDX.Extensions.ComponentModel.DataAnnotations;
 ///     Cache of <see cref="ValidationAttribute" />s
 /// </summary>
 /// <remarks>
-///     This internal class serves as a cache of validation attributes and [Display] attributes.
+///     This class serves as a cache of validation attributes and [Display] attributes.
 ///     It exists both to help performance as well as to abstract away the differences between
 ///     Reflection and TypeDescriptor.
 /// </remarks>
-internal sealed class ValidationAttributeStore
+public sealed class ValidationAttributeStore
 {
     private readonly ConcurrentDictionary<Type, TypeStoreItem> _typeStoreItems = new();
 
     /// <summary>
     ///     Gets the singleton <see cref="ValidationAttributeStore" />
     /// </summary>
-    internal static ValidationAttributeStore Instance { get; } = new ValidationAttributeStore();
+    public static ValidationAttributeStore Instance { get; } = new ValidationAttributeStore();
 
     /// <summary>
     ///     Retrieves the type level validation attributes for the given type.
@@ -37,7 +37,7 @@ internal sealed class ValidationAttributeStore
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
-    internal IEnumerable<ValidationAttribute> GetTypeValidationAttributes(ValidationContext validationContext)
+    public IEnumerable<ValidationAttribute> GetTypeValidationAttributes(ValidationContext validationContext)
     {
         EnsureValidationContext(validationContext);
         var item = GetTypeStoreItem(validationContext.ObjectType);
@@ -52,11 +52,26 @@ internal sealed class ValidationAttributeStore
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
-    internal DisplayAttribute? GetTypeDisplayAttribute(ValidationContext validationContext)
+    public DisplayAttribute? GetTypeDisplayAttribute(ValidationContext validationContext)
     {
         EnsureValidationContext(validationContext);
         var item = GetTypeStoreItem(validationContext.ObjectType);
         return item.DisplayAttribute;
+    }
+
+    /// <summary>
+    ///     Retrieves the <see cref="DisplayNameAttribute" /> associated with the given type.  It may be null.
+    /// </summary>
+    /// <param name="validationContext">The context that describes the type.  It cannot be null.</param>
+    /// <returns>The display attribute instance, if present.</returns>
+#if NET6_0_OR_GREATER
+    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+#endif
+    public DisplayNameAttribute? GetTypeDisplayNameAttribute(ValidationContext validationContext)
+    {
+        EnsureValidationContext(validationContext);
+        var item = GetTypeStoreItem(validationContext.ObjectType);
+        return item.DisplayNameAttribute;
     }
 
     /// <summary>
@@ -67,7 +82,7 @@ internal sealed class ValidationAttributeStore
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
-    internal IEnumerable<ValidationAttribute> GetPropertyValidationAttributes(ValidationContext validationContext)
+    public IEnumerable<ValidationAttribute> GetPropertyValidationAttributes(ValidationContext validationContext)
     {
         EnsureValidationContext(validationContext);
         var typeItem = GetTypeStoreItem(validationContext.ObjectType);
@@ -83,12 +98,28 @@ internal sealed class ValidationAttributeStore
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
-    internal DisplayAttribute? GetPropertyDisplayAttribute(ValidationContext validationContext)
+    public DisplayAttribute? GetPropertyDisplayAttribute(ValidationContext validationContext)
     {
         EnsureValidationContext(validationContext);
         var typeItem = GetTypeStoreItem(validationContext.ObjectType);
         var item = typeItem.GetPropertyStoreItem(validationContext.MemberName!);
         return item.DisplayAttribute;
+    }
+
+    /// <summary>
+    ///     Retrieves the <see cref="DisplayNameAttribute" /> associated with the given property
+    /// </summary>
+    /// <param name="validationContext">The context that describes the property.  It cannot be null.</param>
+    /// <returns>The display attribute instance, if present.</returns>
+#if NET6_0_OR_GREATER
+    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+#endif
+    public DisplayNameAttribute? GetPropertyDisplayNameAttribute(ValidationContext validationContext)
+    {
+        EnsureValidationContext(validationContext);
+        var typeItem = GetTypeStoreItem(validationContext.ObjectType);
+        var item = typeItem.GetPropertyStoreItem(validationContext.MemberName!);
+        return item.DisplayNameAttribute;
     }
 
     /// <summary>
@@ -99,7 +130,7 @@ internal sealed class ValidationAttributeStore
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
-    internal Type GetPropertyType(ValidationContext validationContext)
+    public Type GetPropertyType(ValidationContext validationContext)
     {
         EnsureValidationContext(validationContext);
         var typeItem = GetTypeStoreItem(validationContext.ObjectType);
@@ -117,7 +148,7 @@ internal sealed class ValidationAttributeStore
 #if NET6_0_OR_GREATER
     [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
-    internal bool IsPropertyContext(ValidationContext validationContext)
+    public bool IsPropertyContext(ValidationContext validationContext)
     {
         EnsureValidationContext(validationContext);
         var typeItem = GetTypeStoreItem(validationContext.ObjectType);
@@ -171,11 +202,14 @@ internal sealed class ValidationAttributeStore
         {
             ValidationAttributes = attributes.OfType<ValidationAttribute>();
             DisplayAttribute = attributes.OfType<DisplayAttribute>().SingleOrDefault();
+            DisplayNameAttribute = attributes.OfType<DisplayNameAttribute>().SingleOrDefault();
         }
 
         internal IEnumerable<ValidationAttribute> ValidationAttributes { get; }
 
         internal DisplayAttribute? DisplayAttribute { get; }
+
+        internal DisplayNameAttribute? DisplayNameAttribute { get; }
     }
 
     /// <summary>

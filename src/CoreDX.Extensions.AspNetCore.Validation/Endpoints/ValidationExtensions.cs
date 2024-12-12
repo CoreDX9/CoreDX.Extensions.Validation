@@ -195,10 +195,9 @@ public static class EndpointParameterValidationExtensions
         {
             if (currentResults != null)
             {
-                foreach (var argument in arguments)
-                {
-                    currentResults.Remove(argument.Key);
-                }
+                foreach (var argument in arguments) currentResults.Remove(argument.Key);
+
+                if (currentResults.Count is 0) httpContext.Items.Remove(_validationResultItemName);
             }
         }
         else

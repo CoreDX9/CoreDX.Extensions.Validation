@@ -41,7 +41,7 @@ public class MyModel : PageModel
 }
 ```
 
-3. Minimal-APIs's data annotations localization
+3. Minimal-APIs's data annotations localization (only for .NET 7.0+)
 ``` csharp
 // Add a localization services like this (package: CoreDX.Extensions.Localization.EntityFrameworkCore)
 services
@@ -56,11 +56,11 @@ services
     .AddMvc()
     .AddDataAnnotationsLocalization();
 
-// Then add Minimal-APIs's localization services
+// Then add Minimal-APIs's data annotations localization services
 services.AddEndpointParameterDataAnnotationsLocalization();
 ```
 
-4. Minimal-APIs's data annotations validation
+4. Minimal-APIs's data annotations validation (only for .NET 7.0+)
 ``` csharp
 public class CustomModel
 {

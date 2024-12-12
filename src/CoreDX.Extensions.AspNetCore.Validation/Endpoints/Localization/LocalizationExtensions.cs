@@ -12,17 +12,28 @@ public static class EndpointParameterValidationLocalizationExtensions
     /// Add endpoint parameter data annotations localization services to the <see cref="IServiceCollection"/>.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="configureOptions">A function to configure options.</param>
+    /// <param name="configureAction">A function to configure options.</param>
     /// <returns>The service collection.</returns>
     public static IServiceCollection AddEndpointParameterDataAnnotationsLocalization(
         this IServiceCollection services,
-        Action<EndpointParameterValidationLocalizationOptions>? configureOptions = null)
+        Action<EndpointParameterValidationLocalizationOptions>? configureAction = null)
     {
         ArgumentNullException.ThrowIfNull(services);
 
         services.Configure<EndpointParameterValidationLocalizationOptions>(options =>
         {
-            configureOptions?.Invoke(options);
+            configureAction?.Invoke(options);
+
+            options.Adapters.Add(new CompareAttributeAdapter());
+            options.Adapters.Add(new DataTypeAttributeAdapter());
+            options.Adapters.Add(new FileExtensionsAttributeAdapter());
+            options.Adapters.Add(new MaxLengthAttributeAdapter());
+            options.Adapters.Add(new MinLengthAttributeAdapter());
+            options.Adapters.Add(new RangeAttributeAdapter());
+            options.Adapters.Add(new RegularExpressionAttributeAdapter());
+            options.Adapters.Add(new RequiredAttributeAdapter());
+            options.Adapters.Add(new StringLengthAttributeAdapter());
+            options.Adapters.Add(new AttributeAdapter());
         });
 
         return services;

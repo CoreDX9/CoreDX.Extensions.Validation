@@ -3,6 +3,7 @@ using CoreDX.Extensions.AspNetCore.Http.Validation.Localization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
@@ -284,12 +285,21 @@ public static class EndpointParameterValidationExtensions
             if (result is LocalizableValidationResult localizable)
             {
                 var adapter = adapters.FirstOrDefault(ap => localizable.Attribute.GetType().IsAssignableTo(ap.CanProcessAttributeType));
-                var localizer = localizerFactory.Create(localizable.InstanceObjectType);
-                return localizer
-                [
-                    localizable.Attribute.ErrorMessage ?? result.ErrorMessage ?? "The field {0} is invalid.",
-                    [localizable.DisplayName, .. adapter?.GetLocalizationArguments(localizable.Attribute) ?? []]
-                ];
+                if (adapter != null
+                    && !string.IsNullOrEmpty(localizable.Attribute.ErrorMessage)
+                    && string.IsNullOrEmpty(localizable.Attribute.ErrorMessageResourceName)
+                    && localizable.Attribute.ErrorMessageResourceType == null)
+                {
+                    var localizer = localizerFactory.Create(localizable.InstanceObjectType);
+
+                    return localizer
+                    [
+                        localizable.Attribute.ErrorMessage,
+                        [localizable.DisplayName, .. adapter.GetLocalizationArguments(localizable.Attribute) ?? []]
+                    ];
+                }
+
+                return localizable.Attribute.FormatErrorMessage(localizable.DisplayName);
             }
 
             return result.ErrorMessage!;

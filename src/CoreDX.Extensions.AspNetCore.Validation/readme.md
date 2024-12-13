@@ -72,6 +72,20 @@ services.AddEndpointParameterDataAnnotationsLocalization(static options =>
 ``` csharp
 using Microsoft.AspNetCore.Http;
 
+public class MyCustomAsyncAttribute : AsyncValidationAttribute
+{
+    public string MyArgument1 { get; set; } = null!;
+
+    public string MyArgument2 { get; set; } = null!;
+
+    public string MyArgument3 { get; set; } = null!;
+
+    public override ValueTask<bool> IsValidAsync(object? value, CancellationToken cancellationToken = default)
+    {
+        return ValueTask.FromResult(false);
+    }
+}
+
 public class MyCustomAsyncAttributeAdapter : AttributeAdapterBase<MyCustomAsyncAttribute>
 {
     protected override object[]? GetLocalizationArgumentsInternal(MyCustomAsyncAttribute attribute)
@@ -146,7 +160,7 @@ app.UseEndpoints(endpoints =>
 The main types provided by this library are:
 * `CoreDX.Extensions.AspNetCore.Mvc.ModelBinding.AsyncParamterBinder`
 * `CoreDX.Extensions.AspNetCore.Mvc.ModelBinding.Validation.IAsyncObjectModelValidator`
-* `CoreDX.Extensions.AspNetCore.Http.Validation.Localization.AttributeAdapterBase<MyCustomAsyncAttribute>`
+* `CoreDX.Extensions.AspNetCore.Http.Validation.Localization.AttributeAdapterBase<TAttribute>`
 
 ## Related Packages
 * `CoreDX.Extensions.Validation`

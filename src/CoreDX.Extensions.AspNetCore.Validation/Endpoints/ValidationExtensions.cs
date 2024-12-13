@@ -168,7 +168,7 @@ public static class EndpointParameterValidationExtensions
     /// Otherwise, return <see langword="false"/>.
     /// </returns>
     /// <exception cref="ArgumentException"></exception>
-    public static async Task<bool> TryValidateEndpointParameters(
+    public static async Task<bool> TryValidateEndpointParametersAsync(
         this HttpContext httpContext,
         params IEnumerable<KeyValuePair<string, object?>> arguments)
     {

@@ -129,15 +129,15 @@ public static class EndpointParameterValidationExtensions
     /// <summary>
     /// Adds a endpoint filter to return validation problem automatically when paramater has validation error.
     /// </summary>
-    /// <param name="endpointConvention">The endpoint convention builder.</param>
+    /// <param name="validationEndpointBuilder">The endpoint convention builder.</param>
     /// <param name="statusCode">The http status code.</param>
     /// <returns>A <see cref="RouteHandlerBuilder"/> that can be used to further customize the route handler.</returns>
     public static TBuilder AddValidationProblemResult<TBuilder>(
-        this EndpointParameterDataAnnotationsRouteHandlerBuilder<TBuilder> endpointConvention,
+        this EndpointParameterDataAnnotationsRouteHandlerBuilder<TBuilder> validationEndpointBuilder,
         int statusCode = StatusCodes.Status400BadRequest)
         where TBuilder : IEndpointConventionBuilder
     {
-        endpointConvention.Add(endpointBuilder =>
+        validationEndpointBuilder.Add(endpointBuilder =>
         {
             endpointBuilder.Metadata.Add(
                 new ProducesResponseTypeMetadata(
@@ -148,14 +148,26 @@ public static class EndpointParameterValidationExtensions
             );
         });
 
-        endpointConvention.AddEndpointFilter(static async (endpointFilterInvocationContext, next) =>
+        validationEndpointBuilder.InnerBuilder.AddEndpointFilter(static async (endpointFilterInvocationContext, next) =>
         {
             var errors = endpointFilterInvocationContext.HttpContext.GetEndpointParameterDataAnnotationsProblemDetails();
             if (errors is { Count: > 0 }) return Results.ValidationProblem(errors);
             else return await next(endpointFilterInvocationContext);
         });
 
-        return endpointConvention.InnerBuilder;
+        return validationEndpointBuilder.InnerBuilder;
+    }
+
+    /// <summary>
+    /// Restore <see cref="EndpointParameterDataAnnotationsRouteHandlerBuilder{TBuilder}"/> to original builder of type <typeparamref name="TBuilder"/>.
+    /// </summary>
+    /// <typeparam name="TBuilder">The type of original builder.</typeparam>
+    /// <param name="validationEndpointBuilder">The <see cref="EndpointParameterDataAnnotationsRouteHandlerBuilder{TBuilder}"/> to restore.</param>
+    /// <returns>The original builder.</returns>
+    public static TBuilder RestoreToOriginalBuilder<TBuilder>(this EndpointParameterDataAnnotationsRouteHandlerBuilder<TBuilder> validationEndpointBuilder)
+        where TBuilder : IEndpointConventionBuilder
+    {
+        return validationEndpointBuilder.InnerBuilder;
     }
 
     /// <summary>
@@ -406,7 +418,7 @@ public static class EndpointParameterValidationExtensions
     /// <summary>
     /// A endpoint convention builder that configured parameter validation.
     /// </summary>
-    public sealed class EndpointParameterDataAnnotationsRouteHandlerBuilder<TBuilder> : IEndpointConventionBuilder
+    public sealed class EndpointParameterDataAnnotationsRouteHandlerBuilder<TBuilder>
         where TBuilder : IEndpointConventionBuilder
     {
         private readonly TBuilder _builder;

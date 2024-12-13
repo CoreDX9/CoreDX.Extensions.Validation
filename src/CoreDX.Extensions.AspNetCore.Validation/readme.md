@@ -9,12 +9,15 @@ using Microsoft.AspNetCore.Mvc;
 
 services
     .AddMvc()
+    // Add async data annotations validation services.
     .AddAsyncDataAnnotations();
 
 // Or
 services
     .AddMvcCore()
+    // Add data annotations validation services frist when using mvc core.
     .AddDataAnnotations()
+    // Add async data annotations validation services.
     .AddAsyncDataAnnotations();
 ```
 

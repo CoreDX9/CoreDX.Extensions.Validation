@@ -10,10 +10,15 @@ namespace CoreDX.Extensions.AspNetCore.Http.Validation;
 
 internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<ParameterValidationMetadata>
 {
+    private readonly MethodInfo _endpointMethod;
     private readonly HashSet<ParameterValidationMetadata> _metadatas = [];
 
-    public EndpointBindingParameterValidationMetadata(params IEnumerable<ParameterValidationMetadata> metadatas)
+    public MethodInfo EndpointMethod => _endpointMethod;
+
+    public EndpointBindingParameterValidationMetadata(MethodInfo endpointMethod, params IEnumerable<ParameterValidationMetadata> metadatas)
     {
+        ArgumentNullException.ThrowIfNull(endpointMethod);
+
         HashSet<string> names = [];
         foreach (var metadata in metadatas)
         {
@@ -21,6 +26,8 @@ internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<P
 
             _metadatas.Add(metadata);
         }
+
+        _endpointMethod = endpointMethod;
     }
 
     public async ValueTask<Dictionary<string, ValidationResultStore>?> ValidateAsync(IDictionary<string, object?> arguments, CancellationToken cancellationToken = default)
@@ -71,7 +78,10 @@ internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<P
         }
 
         public string ParameterName => _parameterInfo.Name!;
+
         public string? DisplayName => _displayName;
+
+        public ParameterInfo Parameter => _parameterInfo;
 
         public async ValueTask<ValidationResultStore?> ValidateAsync(object? argument, CancellationToken cancellationToken = default)
         {

@@ -3,7 +3,6 @@ using CoreDX.Extensions.AspNetCore.Http.Validation.Localization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
@@ -11,6 +10,7 @@ using Microsoft.Extensions.Options;
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Reflection;
 using System.Security.Claims;
@@ -82,7 +82,7 @@ public static class EndpointParameterValidationExtensions
                     {
                         bindingParameters.Add(new(parameters[argumentIndex]));
                     }
-                    validationMetadata = new(bindingParameters);
+                    validationMetadata = new(filterFactoryContext.MethodInfo, bindingParameters);
                 }
                 catch (Exception e)
                 {
@@ -151,10 +151,8 @@ public static class EndpointParameterValidationExtensions
         endpointConvention.AddEndpointFilter(static async (endpointFilterInvocationContext, next) =>
         {
             var errors = endpointFilterInvocationContext.HttpContext.GetEndpointParameterDataAnnotationsProblemDetails();
-
-            if (errors != null) return Results.ValidationProblem(errors);
-
-            return await next(endpointFilterInvocationContext);
+            if (errors is { Count: > 0 }) return Results.ValidationProblem(errors);
+            else return await next(endpointFilterInvocationContext);
         });
 
         return endpointConvention.InnerBuilder;
@@ -164,7 +162,7 @@ public static class EndpointParameterValidationExtensions
     /// Validate parameters using given values.
     /// </summary>
     /// <param name="httpContext">The http context.</param>
-    /// <param name="arguments">Key value pair of parameter name and value.</param>
+    /// <param name="arguments">Key value pair collection of parameter name and value.</param>
     /// <returns>
     /// Return <see langword="true"/> if endpoint has validatable parameter and <paramref name="arguments"/> has correct parameter name and type.
     /// Otherwise, return <see langword="false"/>.
@@ -176,12 +174,10 @@ public static class EndpointParameterValidationExtensions
     {
          ArgumentNullException.ThrowIfNull(httpContext);
 
-        var endpoint = httpContext.GetEndpoint();
-        var metadata = endpoint?.Metadata
-            .FirstOrDefault(md => md is EndpointBindingParameterValidationMetadata) as EndpointBindingParameterValidationMetadata;
+        var metadata = httpContext.GetEndpointBindingParameterValidationMetadata();
         if (metadata is null) return false;
 
-        if (!arguments.Any()) return true;
+        if (!arguments.Any()) throw new ArgumentException("There are no elements in the sequence.", nameof(arguments));
 
         HashSet<string> names = [];
         foreach (var name in arguments.Select(arg => arg.Key))
@@ -193,12 +189,13 @@ public static class EndpointParameterValidationExtensions
         var currentResults = httpContext.GetEndpointParameterDataAnnotationsValidationResultsCore();
         var newResults = await metadata.ValidateAsync(arguments.ToDictionary(arg => arg.Key, arg => arg.Value));
 
-        if (newResults is null)
+        if (newResults is null) // 本次验证结果没有任何错误
         {
             if (currentResults != null)
             {
+                // 移除本次验证结果中没有验证错误数据的参数项
                 foreach (var argument in arguments) currentResults.Remove(argument.Key);
-
+                // 如果移除后变成空集，直接清除结果集
                 if (currentResults.Count is 0) httpContext.Items.Remove(_validationResultItemName);
             }
         }
@@ -206,6 +203,7 @@ public static class EndpointParameterValidationExtensions
         {
             if (currentResults != null)
             {
+                // 如果上次的验证结果中有同名参数的数据，但本次验证结果中没有，移除该参数的过时的旧结果数据
                 foreach (var argument in arguments)
                 {
                     if (!newResults.Keys.Any(key => key == argument.Key)) currentResults.Remove(argument.Key);
@@ -213,10 +211,11 @@ public static class EndpointParameterValidationExtensions
             }
             else
             {
+                // 上次验证结果显示没有任何错误，新建错误结果集
                 currentResults = [];
                 httpContext.Items.Add(_validationResultItemName, currentResults);
             }
-
+            // 添加上次验证中没有错误数据的参数项，或者更新同名参数项的验证错误数据
             foreach (var newResult in newResults) currentResults[newResult.Key] = newResult.Value;
         }
 
@@ -238,7 +237,8 @@ public static class EndpointParameterValidationExtensions
                 r => r.Key,
                 r => new ArgumentPropertiesValidationResults(r.Value.ToDictionary(
                     fr => fr.Key.ToString()!,
-                    fr => fr.Value.ToImmutableList()))
+                    fr => fr.Value.ToImmutableList())
+                )
             )
         );
     }
@@ -256,19 +256,48 @@ public static class EndpointParameterValidationExtensions
         if (validationResult?.Any(vrp => vrp.Value.Any()) is true)
         {
             var localizerFactory = httpContext.RequestServices.GetService<IStringLocalizerFactory>();
-            var localizationOptions = httpContext.RequestServices.GetService<IOptions<EndpointParameterValidationLocalizationOptions>>()?.Value;
-            var adapters = localizationOptions?.Adapters;
+
+            EndpointParameterValidationLocalizationOptions? localizationOptions = null;
+            AttributeLocalizationAdapters? adapters = null;
+            if (localizerFactory != null)
+            {
+                localizationOptions = httpContext.RequestServices
+                    .GetService<IOptions<EndpointParameterValidationLocalizationOptions>>()
+                    ?.Value;
+
+                adapters = localizationOptions?.Adapters;
+            }
+
+            var metadata = httpContext.GetEndpointBindingParameterValidationMetadata();
+            Debug.Assert(metadata != null);
+            var endpointHandlerType = metadata.EndpointMethod.ReflectedType;
+            Debug.Assert(endpointHandlerType != null);
 
             var errors = validationResult.SelectMany(vrp => vrp.Value);
             result = localizerFactory is null || !(adapters?.Count > 0)
                 ? errors
                     .ToDictionary(
                         fvr => fvr.Key.ToString()!,
-                        fvr => fvr.Value.Select(ToErrorMessage).ToArray())
+                        fvr => fvr.Value.Select(ToErrorMessage).ToArray()
+                    )
                 : errors
                     .ToDictionary(
                         fvr => fvr.Key.ToString()!,
-                        fvr => fvr.Value.Select(vr => ToLocalizedErrorMessage(vr, adapters, localizerFactory)).ToArray());
+                        fvr => fvr.Value
+                            .Select(vr => 
+                                ToLocalizedErrorMessage(
+                                    vr,
+                                    fvr.Key.ModelIsTopLevelFakeObject
+                                        ? new KeyValuePair<Type, ParameterValidationMetadata>(
+                                            endpointHandlerType,
+                                            metadata?.FirstOrDefault(md => md.ParameterName == fvr.Key.FieldName)!)
+                                        : null,
+                                    adapters,
+                                    localizerFactory
+                                )
+                            )
+                            .ToArray()
+                    );
         }
 
         return result;
@@ -280,13 +309,21 @@ public static class EndpointParameterValidationExtensions
 
         string ToLocalizedErrorMessage(
             ValidationResult result,
+            KeyValuePair<Type, ParameterValidationMetadata>? parameterMetadata,
             AttributeLocalizationAdapters adapters,
             IStringLocalizerFactory localizerFactory)
         {
             if (result is LocalizableValidationResult localizable)
             {
                 var localizer = localizerFactory.Create(localizable.InstanceObjectType);
-                var displayName = GetDisplayName(localizable, localizer);
+
+                string displayName;
+                if (!string.IsNullOrEmpty(parameterMetadata?.Value.DisplayName))
+                {
+                    var parameterLocalizer = localizerFactory.Create(parameterMetadata.Value.Key);
+                    displayName = parameterLocalizer[parameterMetadata.Value.Value.DisplayName];
+                }
+                else displayName = GetDisplayName(localizable, localizer);
 
                 var adapter = adapters.FirstOrDefault(ap => localizable.Attribute.GetType().IsAssignableTo(ap.CanProcessAttributeType));
                 if (adapter != null
@@ -346,6 +383,13 @@ public static class EndpointParameterValidationExtensions
 
         httpContext.Items.TryGetValue(_validationResultItemName, out var result);
         return result as Dictionary<string, ValidationResultStore>;
+    }
+
+    internal static EndpointBindingParameterValidationMetadata? GetEndpointBindingParameterValidationMetadata(this HttpContext httpContext)
+    {
+        var endpoint = httpContext.GetEndpoint();
+        return endpoint?.Metadata
+            .FirstOrDefault(md => md is EndpointBindingParameterValidationMetadata) as EndpointBindingParameterValidationMetadata;
     }
 
     internal static bool IsRequestDelegateFactorySpecialBoundType(Type type) =>

@@ -137,7 +137,7 @@ public static class EndpointParameterValidationExtensions
         int statusCode = StatusCodes.Status400BadRequest)
         where TBuilder : IEndpointConventionBuilder
     {
-        validationEndpointBuilder.Add(endpointBuilder =>
+        validationEndpointBuilder.InnerBuilder.Add(endpointBuilder =>
         {
             endpointBuilder.Metadata.Add(
                 new ProducesResponseTypeMetadata(
@@ -429,11 +429,5 @@ public static class EndpointParameterValidationExtensions
         }
 
         internal TBuilder InnerBuilder => _builder;
-
-        /// <inheritdoc/>
-        public void Add(Action<EndpointBuilder> convention)
-        {
-            _builder.Add(convention);
-        }
     }
 }

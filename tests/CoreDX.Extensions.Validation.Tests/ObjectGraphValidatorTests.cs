@@ -150,6 +150,22 @@ namespace CoreDX.Extensions.Validation.Tests
         }
 
         [Fact]
+        public static async Task TryValidateObjectGraphWithDriveredListOfT()
+        {
+            var instance = new DerivedList();
+            var resultStore = new ValidationResultStore();
+
+            var result = await ObjectGraphValidator.TryValidateObjectAsync(
+                instance,
+                new ValidationContext(instance),
+                resultStore,
+                true);
+
+            Assert.False(result);
+            Assert.Equal(1, resultStore.Count());
+        }
+
+        [Fact]
         public static async Task TryValidateObjectGraphThrowsIfValidationContextUsedMultiTimes()
         {
             var instance = new object();
@@ -282,6 +298,12 @@ namespace CoreDX.Extensions.Validation.Tests
         {
             return ((IEnumerable)_dict).GetEnumerator();
         }
+    }
+
+    public class DerivedList : List<int>
+    {
+        [Required]
+        public string MyProperty { get; set; }
     }
 
     public class AsyncMemberNamesFailAttribute : AsyncValidationAttribute

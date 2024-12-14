@@ -117,9 +117,6 @@ public static partial class ObjectGraphValidator
         typeof(ImmutableQueue<>),
         typeof(ImmutableStack<>),
 #endif
-#if NET8_0_OR_GREATER
-        typeof(FrozenSet<>),
-#endif
         typeof(BlockingCollection<>),
         typeof(ConcurrentBag<>),
         typeof(ConcurrentQueue<>),

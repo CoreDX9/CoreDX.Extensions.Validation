@@ -175,7 +175,7 @@ public sealed class FieldIdentifier : IEquatable<FieldIdentifier>
         } while (fieldIdentifier != null && !fieldIdentifier.ModelIsTopLevelFakeObject);
 
         if (fieldIdentifier is null && !chainHasTopLevelFaker) sb.Insert(0, "$");
-        else if (fieldIdentifier!.ModelIsTopLevelFakeObject) sb.Insert(0, fieldIdentifier.FieldName);
+        else if (fieldIdentifier is { ModelIsTopLevelFakeObject: true }) sb.Insert(0, fieldIdentifier.FieldName);
 
         return sb.ToString();
     }

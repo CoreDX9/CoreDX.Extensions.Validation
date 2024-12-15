@@ -2,31 +2,34 @@
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using static CoreDX.Extensions.AspNetCore.Http.Validation.EndpointBindingParameterValidationMetadata;
+using static CoreDX.Extensions.AspNetCore.Http.Validation.EndpointBindingParametersValidationMetadata;
 using static Microsoft.AspNetCore.Http.EndpointParameterValidationExtensions;
 
 namespace CoreDX.Extensions.AspNetCore.Http.Validation;
 
-internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<ParameterValidationMetadata>
+internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDictionary<string, ParameterValidationMetadata>
 {
     private readonly MethodInfo _endpointMethod;
-    private readonly HashSet<ParameterValidationMetadata> _metadatas = [];
+    private readonly IReadOnlyDictionary<string, ParameterValidationMetadata> _metadatas;
 
     public MethodInfo EndpointMethod => _endpointMethod;
 
-    public EndpointBindingParameterValidationMetadata(MethodInfo endpointMethod, params IEnumerable<ParameterValidationMetadata> metadatas)
+    public EndpointBindingParametersValidationMetadata(MethodInfo endpointMethod, params IEnumerable<ParameterValidationMetadata> metadatas)
     {
         ArgumentNullException.ThrowIfNull(endpointMethod);
 
+        Dictionary<string, ParameterValidationMetadata> tempMetadatas = [];
         HashSet<string> names = [];
         foreach (var metadata in metadatas)
         {
             if (!names.Add(metadata.ParameterName)) throw new ArgumentException("metadata's parameter name must be unique.", nameof(metadatas));
 
-            _metadatas.Add(metadata);
+            tempMetadatas.Add(metadata.ParameterName, metadata);
         }
 
+        _metadatas = tempMetadatas.AsReadOnly();
         _endpointMethod = endpointMethod;
     }
 
@@ -35,8 +38,10 @@ internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<P
         Dictionary<string, ValidationResultStore> result = [];
         foreach (var argument in arguments)
         {
-            var metadata = _metadatas.FirstOrDefault(md => md.ParameterName == argument.Key);
-            if (metadata is null) throw new InvalidOperationException($"Parameter named {argument.Key} does not exist.");
+            if (!_metadatas.TryGetValue(argument.Key, out var metadata))
+            {
+                throw new InvalidOperationException($"Parameter named {argument.Key} does not exist.");
+            }
 
             var argumentResults = await metadata.ValidateAsync(argument.Value, cancellationToken);
             if (argumentResults is not null) result.TryAdd(metadata.ParameterName, argumentResults);
@@ -44,15 +49,24 @@ internal sealed class EndpointBindingParameterValidationMetadata : IEnumerable<P
         return result.Count > 0 ? result : null;
     }
 
-    public IEnumerator<ParameterValidationMetadata> GetEnumerator()
-    {
-        return _metadatas.GetEnumerator();
-    }
+    public IEnumerable<string> Keys => _metadatas.Keys;
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
+    public IEnumerable<ParameterValidationMetadata> Values => _metadatas.Values;
+
+    public int Count => _metadatas.Count;
+
+    public ParameterValidationMetadata this[string key] => _metadatas[key];
+
+    public bool ContainsKey(string key) => _metadatas.ContainsKey(key);
+
+    public bool TryGetValue(
+        string key,
+        [MaybeNullWhen(false)] out ParameterValidationMetadata value)
+        => _metadatas.TryGetValue(key, out value);
+
+    public IEnumerator<KeyValuePair<string, ParameterValidationMetadata>> GetEnumerator() => _metadatas.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     internal sealed class ParameterValidationMetadata
     {

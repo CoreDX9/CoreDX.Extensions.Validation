@@ -1,6 +1,7 @@
 ﻿using CoreDX.Extensions.AspNetCore.Http.Validation;
 using CoreDX.Extensions.AspNetCore.Http.Validation.Localization;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,7 +15,7 @@ using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Reflection;
 using System.Security.Claims;
-using static CoreDX.Extensions.AspNetCore.Http.Validation.EndpointBindingParameterValidationMetadata;
+using static CoreDX.Extensions.AspNetCore.Http.Validation.EndpointBindingParametersValidationMetadata;
 
 namespace Microsoft.AspNetCore.Http;
 
@@ -47,6 +48,12 @@ public static class EndpointParameterValidationExtensions
                 return;
             }
 
+            if (endpointBuilder.Metadata.Any(static md => md is EndpointBindingParametersValidationMetadata))
+            {
+                logger.LogDebug("Already has a parameter data annotations validation filter on endpoint {actionName}.", endpointBuilder.DisplayName);
+                return;
+            }
+
             endpointBuilder.FilterFactories.Add((filterFactoryContext, next) =>
             {
                 var loggerFactory = filterFactoryContext.ApplicationServices.GetRequiredService<ILoggerFactory>();
@@ -54,6 +61,7 @@ public static class EndpointParameterValidationExtensions
 
                 var parameters = filterFactoryContext.MethodInfo.GetParameters();
 
+                var isServicePredicate = filterFactoryContext.ApplicationServices.GetService<IServiceProviderIsService>();
                 List<int> bindingParameterIndexs = new(parameters.Length);
                 for (int i = 0; i < parameters.Length; i++)
                 {
@@ -63,7 +71,6 @@ public static class EndpointParameterValidationExtensions
 #if NET8_0_OR_GREATER
                     if (parameter.GetCustomAttribute<FromKeyedServicesAttribute>() is not null) continue;
 #endif
-                    var isServicePredicate = filterFactoryContext.ApplicationServices.GetService<IServiceProviderIsService>();
                     if (isServicePredicate?.IsService(parameter.ParameterType) is true) continue;
 
                     bindingParameterIndexs.Add(i);
@@ -74,7 +81,7 @@ public static class EndpointParameterValidationExtensions
                     logger.LogDebug("Route handler method '{methodName}' does not contain any validatable parameters, skipping adding validation filter.", filterFactoryContext.MethodInfo.Name);
                 }
 
-                EndpointBindingParameterValidationMetadata? validationMetadata;
+                EndpointBindingParametersValidationMetadata? validationMetadata;
                 try
                 {
                     List<ParameterValidationMetadata> bindingParameters = new(bindingParameterIndexs.Count);
@@ -98,7 +105,7 @@ public static class EndpointParameterValidationExtensions
                 {
                     var endpoint = invocationContext.HttpContext.GetEndpoint();
                     var metadata = endpoint?.Metadata
-                        .FirstOrDefault(md => md is EndpointBindingParameterValidationMetadata) as EndpointBindingParameterValidationMetadata;
+                        .FirstOrDefault(static md => md is EndpointBindingParametersValidationMetadata) as EndpointBindingParametersValidationMetadata;
 
                     if (metadata is null) return await next(invocationContext);
 
@@ -139,20 +146,41 @@ public static class EndpointParameterValidationExtensions
     {
         validationEndpointBuilder.InnerBuilder.Add(endpointBuilder =>
         {
-            endpointBuilder.Metadata.Add(
-                new ProducesResponseTypeMetadata(
-                    statusCode,
-                    typeof(HttpValidationProblemDetails),
-                    ["application/problem+json", "application/json"]
-                )
-            );
-        });
+            var loggerFactory = endpointBuilder.ApplicationServices.GetRequiredService<ILoggerFactory>();
+            var logger = loggerFactory.CreateLogger(_filterLoggerName);
 
-        validationEndpointBuilder.InnerBuilder.AddEndpointFilter(static async (endpointFilterInvocationContext, next) =>
-        {
-            var errors = endpointFilterInvocationContext.HttpContext.GetEndpointParameterDataAnnotationsProblemDetails();
-            if (errors is { Count: > 0 }) return Results.ValidationProblem(errors);
-            else return await next(endpointFilterInvocationContext);
+            if (!endpointBuilder.Metadata.Any(static md =>
+                md is IProducesResponseTypeMetadata pr
+                && (pr.Type?.IsAssignableTo(typeof(HttpValidationProblemDetails))) is true)
+            )
+            {
+                endpointBuilder.Metadata.Add(
+                    new ProducesResponseTypeMetadata(
+                        statusCode,
+                        typeof(HttpValidationProblemDetails),
+                        ["application/problem+json", "application/json"]
+                    )
+                );
+            }
+
+            endpointBuilder.FilterFactories.Add((filterFactoryContext, next) =>
+            {
+                if (endpointBuilder.Metadata.Any(static md => md is EndpointParameterDataAnnotationsValidationProblemResultMark))
+                {
+                    logger.LogDebug("Already has a parameter data annotations validation problem result filter on endpoint {actionName}.", endpointBuilder.DisplayName);
+                    return invocationContext => next(invocationContext);
+                }
+
+                endpointBuilder.Metadata.Add(new EndpointParameterDataAnnotationsValidationProblemResultMark());
+
+                return async invocationContext =>
+                {
+                    var errors = invocationContext.HttpContext.GetEndpointParameterDataAnnotationsProblemDetails();
+
+                    if (errors is { Count: > 0 }) return Results.ValidationProblem(errors);
+                    else return await next(invocationContext);
+                };
+            });
         });
 
         return validationEndpointBuilder.InnerBuilder;
@@ -186,20 +214,20 @@ public static class EndpointParameterValidationExtensions
     {
          ArgumentNullException.ThrowIfNull(httpContext);
 
-        var metadata = httpContext.GetEndpointBindingParameterValidationMetadata();
+        var metadata = httpContext.GetEndpointBindingParametersValidationMetadata();
         if (metadata is null) return false;
 
         if (!arguments.Any()) throw new ArgumentException("There are no elements in the sequence.", nameof(arguments));
 
         HashSet<string> names = [];
-        foreach (var name in arguments.Select(arg => arg.Key))
+        foreach (var name in arguments.Select(static arg => arg.Key))
         {
             if (string.IsNullOrEmpty(name)) throw new ArgumentException("Argument's name cannot be null or empty.", nameof(arguments));
             if (!names.Add(name)) throw new ArgumentException("Argument's name must be unique.", nameof(arguments));
         }
 
         var currentResults = httpContext.GetEndpointParameterDataAnnotationsValidationResultsCore();
-        var newResults = await metadata.ValidateAsync(arguments.ToDictionary(arg => arg.Key, arg => arg.Value));
+        var newResults = await metadata.ValidateAsync(arguments.ToDictionary(static arg => arg.Key, static arg => arg.Value));
 
         if (newResults is null) // 本次验证结果没有任何错误
         {
@@ -224,6 +252,8 @@ public static class EndpointParameterValidationExtensions
             else
             {
                 // 上次验证结果显示没有任何错误，新建错误结果集
+                httpContext.Items.Remove(_validationResultItemName);
+
                 currentResults = [];
                 httpContext.Items.Add(_validationResultItemName, currentResults);
             }
@@ -246,10 +276,10 @@ public static class EndpointParameterValidationExtensions
 
         return new(results
             .ToDictionary(
-                r => r.Key,
-                r => new ArgumentPropertiesValidationResults(r.Value.ToDictionary(
-                    fr => fr.Key.ToString()!,
-                    fr => fr.Value.ToImmutableList())
+                static r => r.Key,
+                static r => new ArgumentPropertiesValidationResults(r.Value.ToDictionary(
+                    static fr => fr.Key.ToString()!,
+                    static fr => fr.Value.ToImmutableList())
                 )
             )
         );
@@ -265,7 +295,7 @@ public static class EndpointParameterValidationExtensions
         Dictionary<string, string[]>? result = null;
 
         var validationResult = httpContext.GetEndpointParameterDataAnnotationsValidationResultsCore();
-        if (validationResult?.Any(vrp => vrp.Value.Any()) is true)
+        if (validationResult?.Any(static vrp => vrp.Value.Any()) is true)
         {
             var localizerFactory = httpContext.RequestServices.GetService<IStringLocalizerFactory>();
 
@@ -280,21 +310,21 @@ public static class EndpointParameterValidationExtensions
                 adapters = localizationOptions?.Adapters;
             }
 
-            var metadata = httpContext.GetEndpointBindingParameterValidationMetadata();
-            Debug.Assert(metadata != null);
-            var endpointHandlerType = metadata.EndpointMethod.ReflectedType;
+            var metadatas = httpContext.GetEndpointBindingParametersValidationMetadata();
+            Debug.Assert(metadatas != null);
+            var endpointHandlerType = metadatas.EndpointMethod.ReflectedType;
             Debug.Assert(endpointHandlerType != null);
 
-            var errors = validationResult.SelectMany(vrp => vrp.Value);
+            var errors = validationResult.SelectMany(static vrp => vrp.Value);
             result = localizerFactory is null || !(adapters?.Count > 0)
                 ? errors
                     .ToDictionary(
-                        fvr => fvr.Key.ToString()!,
-                        fvr => fvr.Value.Select(ToErrorMessage).ToArray()
+                        static fvr => fvr.Key.ToString()!,
+                        static fvr => fvr.Value.Select(ToErrorMessage).ToArray()
                     )
                 : errors
                     .ToDictionary(
-                        fvr => fvr.Key.ToString()!,
+                        static fvr => fvr.Key.ToString()!,
                         fvr => fvr.Value
                             .Select(vr => 
                                 ToLocalizedErrorMessage(
@@ -302,7 +332,9 @@ public static class EndpointParameterValidationExtensions
                                     fvr.Key.ModelIsTopLevelFakeObject
                                         ? new KeyValuePair<Type, ParameterValidationMetadata>(
                                             endpointHandlerType,
-                                            metadata?.FirstOrDefault(md => md.ParameterName == fvr.Key.FieldName)!)
+                                            (metadatas?.TryGetValue(fvr.Key.FieldName!, out var metadata)) is true
+                                                ? metadata
+                                                : null! /* never null */)
                                         : null,
                                     adapters,
                                     localizerFactory
@@ -397,11 +429,11 @@ public static class EndpointParameterValidationExtensions
         return result as Dictionary<string, ValidationResultStore>;
     }
 
-    internal static EndpointBindingParameterValidationMetadata? GetEndpointBindingParameterValidationMetadata(this HttpContext httpContext)
+    internal static EndpointBindingParametersValidationMetadata? GetEndpointBindingParametersValidationMetadata(this HttpContext httpContext)
     {
         var endpoint = httpContext.GetEndpoint();
         return endpoint?.Metadata
-            .FirstOrDefault(md => md is EndpointBindingParameterValidationMetadata) as EndpointBindingParameterValidationMetadata;
+            .FirstOrDefault(static md => md is EndpointBindingParametersValidationMetadata) as EndpointBindingParametersValidationMetadata;
     }
 
     internal static bool IsRequestDelegateFactorySpecialBoundType(Type type) =>
@@ -431,3 +463,8 @@ public static class EndpointParameterValidationExtensions
         internal TBuilder InnerBuilder => _builder;
     }
 }
+
+/// <summary>
+/// A class to mark endpoint parameter data annotations validation problem result filer has been configured.
+/// </summary>
+public sealed class EndpointParameterDataAnnotationsValidationProblemResultMark;

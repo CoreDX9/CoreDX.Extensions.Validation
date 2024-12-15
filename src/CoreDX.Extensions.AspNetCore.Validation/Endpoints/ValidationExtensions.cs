@@ -60,10 +60,10 @@ public static class EndpointParameterValidationExtensions
                 return;
             }
 
+            endpointBuilder.Metadata.Add(new EndpointBindingParametersValidationMetadataMark());
+
             endpointBuilder.FilterFactories.Add((filterFactoryContext, next) =>
             {
-                endpointBuilder.Metadata.Add(new EndpointBindingParametersValidationMetadataMark());
-
                 var loggerFactory = filterFactoryContext.ApplicationServices.GetRequiredService<ILoggerFactory>();
                 var logger = loggerFactory.CreateLogger(_filterLoggerName);
 

@@ -54,8 +54,16 @@ public static class EndpointParameterValidationExtensions
                 return;
             }
 
+            if (endpointBuilder.Metadata.Any(static md => md is EndpointBindingParametersValidationMetadataMark))
+            {
+                logger.LogDebug("Already called method AddEndpointParameterDataAnnotations before on endpoint {actionName}.", endpointBuilder.DisplayName);
+                return;
+            }
+
             endpointBuilder.FilterFactories.Add((filterFactoryContext, next) =>
             {
+                endpointBuilder.Metadata.Add(new EndpointBindingParametersValidationMetadataMark());
+
                 var loggerFactory = filterFactoryContext.ApplicationServices.GetRequiredService<ILoggerFactory>();
                 var logger = loggerFactory.CreateLogger(_filterLoggerName);
 
@@ -163,16 +171,16 @@ public static class EndpointParameterValidationExtensions
                 );
             }
 
-            endpointBuilder.FilterFactories.Add((filterFactoryContext, next) =>
+            if (endpointBuilder.Metadata.Any(static md => md is EndpointParameterDataAnnotationsValidationProblemResultMark))
             {
-                if (endpointBuilder.Metadata.Any(static md => md is EndpointParameterDataAnnotationsValidationProblemResultMark))
-                {
-                    logger.LogDebug("Already has a parameter data annotations validation problem result filter on endpoint {actionName}.", endpointBuilder.DisplayName);
-                    return invocationContext => next(invocationContext);
-                }
+                logger.LogDebug("Already has a parameter data annotations validation problem result filter on endpoint {actionName}.", endpointBuilder.DisplayName);
+                return;
+            }
 
-                endpointBuilder.Metadata.Add(new EndpointParameterDataAnnotationsValidationProblemResultMark());
+            endpointBuilder.Metadata.Add(new EndpointParameterDataAnnotationsValidationProblemResultMark());
 
+            endpointBuilder.FilterFactories.Add(static (filterFactoryContext, next) =>
+            {
                 return async invocationContext =>
                 {
                     var errors = invocationContext.HttpContext.GetEndpointParameterDataAnnotationsProblemDetails();
@@ -463,6 +471,11 @@ public static class EndpointParameterValidationExtensions
         internal TBuilder InnerBuilder => _builder;
     }
 }
+
+/// <summary>
+/// A class to mark endpoint parameter data annotations validation filer has been configured.
+/// </summary>
+public sealed class EndpointBindingParametersValidationMetadataMark;
 
 /// <summary>
 /// A class to mark endpoint parameter data annotations validation problem result filer has been configured.

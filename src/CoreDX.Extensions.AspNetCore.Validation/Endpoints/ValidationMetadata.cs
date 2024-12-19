@@ -49,6 +49,8 @@ internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDic
         return result.Count > 0 ? result : null;
     }
 
+    #region IReadOnlyDictionary<TKey, TValue> members
+
     public IEnumerable<string> Keys => _metadatas.Keys;
 
     public IEnumerable<ParameterValidationMetadata> Values => _metadatas.Values;
@@ -68,19 +70,23 @@ internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDic
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+    #endregion
+
     internal sealed class ParameterValidationMetadata
     {
-        private ParameterInfo _parameterInfo;
-        private string? _displayName;
-        private RequiredAttribute? _requiredAttribute;
-        private ImmutableList<ValidationAttribute> _otherValidationAttributes;
+        private readonly ParameterInfo _parameterInfo;
+        private readonly int _parameterIndex;
+        private readonly string? _displayName;
+        private readonly RequiredAttribute? _requiredAttribute;
+        private readonly ImmutableList<ValidationAttribute> _otherValidationAttributes;
 
-        public ParameterValidationMetadata(ParameterInfo parameterInfo)
+        public ParameterValidationMetadata(ParameterInfo parameterInfo, int parameterIndex)
         {
             _parameterInfo = parameterInfo ?? throw new ArgumentNullException(nameof(parameterInfo));
 
             if (string.IsNullOrEmpty(parameterInfo.Name)) throw new ArgumentException("Parameter must be have name.", nameof(parameterInfo));
 
+            _parameterIndex = parameterIndex;
             _displayName = parameterInfo.GetCustomAttribute<DisplayAttribute>()?.Name
                 ?? parameterInfo.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName;
 
@@ -93,6 +99,8 @@ internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDic
 
         public string ParameterName => _parameterInfo.Name!;
 
+        public int ParameterIndex => _parameterIndex;
+
         public string? DisplayName => _displayName;
 
         public ParameterInfo Parameter => _parameterInfo;
@@ -104,8 +112,7 @@ internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDic
                 throw new InvalidCastException($"Object cannot assign to {ParameterName} of type {_parameterInfo.ParameterType}.");
             }
 
-            var topName = ParameterName ?? $"<argumentSelf({argument?.GetType()?.Name})>";
-            ValidationResultStore resultStore = new();
+            ValidationResultStore resultStore = [];
             List<ValidationResult> results = [];
 
             var validationContext = new ValidationContext(argument ?? new())
@@ -152,13 +159,14 @@ internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDic
                     resultStore,
                     true,
                     static type => !IsRequestDelegateFactorySpecialBoundType(type),
-                    topName,
-                    cancellationToken);
+                    ParameterName,
+                    cancellationToken
+                );
             }
 
             if (results.Count > 0)
             {
-                var id = FieldIdentifier.GetFakeTopLevelObjectIdentifier(topName);
+                var id = FieldIdentifier.GetFakeTopLevelObjectIdentifier(ParameterName);
                 resultStore.Add(id, results);
             }
 

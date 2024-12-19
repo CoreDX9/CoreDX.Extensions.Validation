@@ -4,7 +4,7 @@
     <TargetFrameworks>net9.0;net8.0;net7.0;net6.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageVersion>1.3.3</PackageVersion>
+    <PackageVersion>1.3.4</PackageVersion>
     <PackageTags>ModelValidation AsyncModelValidation MVC RazorPages Minimal-APIs</PackageTags>
     <Description>Model binder with async model validation services for ASP.NET Core MVC and Minimal-APIs.</Description>
     <Title>ASP.NET Core MVC model binder with async model validation services and minimal-apis's data annotations validation endpoint filters.</Title>

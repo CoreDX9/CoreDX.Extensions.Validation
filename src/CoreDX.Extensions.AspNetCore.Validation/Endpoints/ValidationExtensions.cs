@@ -95,7 +95,7 @@ public static class EndpointParameterValidationExtensions
                     List<ParameterValidationMetadata> bindingParameters = new(bindingParameterIndexs.Count);
                     foreach (var argumentIndex in bindingParameterIndexs)
                     {
-                        bindingParameters.Add(new(parameters[argumentIndex]));
+                        bindingParameters.Add(new(parameters[argumentIndex], argumentIndex));
                     }
                     validationMetadata = new(filterFactoryContext.MethodInfo, bindingParameters);
                 }
@@ -117,10 +117,10 @@ public static class EndpointParameterValidationExtensions
 
                     if (metadata is null) return await next(invocationContext);
 
-                    Dictionary<string, object?> arguments = new(bindingParameterIndexs.Count);
-                    foreach (var argumentIndex in bindingParameterIndexs)
+                    Dictionary<string, object?> arguments = new(metadata.Count);
+                    foreach (var parameter in metadata)
                     {
-                        arguments.Add(parameters[argumentIndex].Name!, invocationContext.Arguments[argumentIndex]);
+                        arguments.Add(parameter.Value.ParameterName!, invocationContext.Arguments[parameter.Value.ParameterIndex]);
                     }
 
                     try
@@ -130,7 +130,9 @@ public static class EndpointParameterValidationExtensions
                     }
                     catch (Exception e)
                     {
-                        logger.LogError(e, "Validate parameter failed for route handler method '{methodName}'.", filterFactoryContext.MethodInfo.Name);
+                        var loggerFactory = invocationContext.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>();
+                        var logger = loggerFactory.CreateLogger(_filterLoggerName);
+                        logger.LogError(e, "Validate parameter failed for route handler method '{methodName}'.", metadata.EndpointMethod.Name);
                     }
 
                     return await next(invocationContext);
@@ -154,6 +156,8 @@ public static class EndpointParameterValidationExtensions
     {
         validationEndpointBuilder.InnerBuilder.Add(endpointBuilder =>
         {
+            if (!endpointBuilder.Metadata.Any(static md => md is EndpointBindingParametersValidationMetadata)) return;
+
             var loggerFactory = endpointBuilder.ApplicationServices.GetRequiredService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger(_filterLoggerName);
 

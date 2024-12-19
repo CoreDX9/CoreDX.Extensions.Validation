@@ -32,12 +32,14 @@ public static class EndpointParameterValidationExtensions
     /// </summary>
     /// <typeparam name="TBuilder">The type of endpoint convention builder.</typeparam>
     /// <param name="endpointConvention">The endpoint convention builder.</param>
+    /// <param name="throwOnValidationException">Should an exception be thrown when an exception occurs during validation.</param>
     /// <returns>A <see cref="RouteHandlerBuilder"/> that can be used to further customize the route handler.</returns>
     public static EndpointParameterDataAnnotationsRouteHandlerBuilder<TBuilder> AddEndpointParameterDataAnnotations<TBuilder>(
-        this TBuilder endpointConvention)
+        this TBuilder endpointConvention,
+        bool throwOnValidationException = false)
         where TBuilder : IEndpointConventionBuilder
     {
-        endpointConvention.Add(static endpointBuilder =>
+        endpointConvention.Add(endpointBuilder =>
         {
             var loggerFactory = endpointBuilder.ApplicationServices.GetRequiredService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger(_filterLoggerName);
@@ -60,13 +62,13 @@ public static class EndpointParameterValidationExtensions
                 return;
             }
 
-            endpointBuilder.Metadata.Add(new EndpointBindingParametersValidationMetadataMark());
+            endpointBuilder.Metadata.Add(new EndpointBindingParametersValidationMetadataMark(throwOnValidationException));
 
             endpointBuilder.FilterFactories.Add((filterFactoryContext, next) =>
             {
                 var loggerFactory = filterFactoryContext.ApplicationServices.GetRequiredService<ILoggerFactory>();
                 var logger = loggerFactory.CreateLogger(_filterLoggerName);
-
+                
                 var parameters = filterFactoryContext.MethodInfo.GetParameters();
 
                 var isServicePredicate = filterFactoryContext.ApplicationServices.GetService<IServiceProviderIsService>();
@@ -109,30 +111,62 @@ public static class EndpointParameterValidationExtensions
 
                 endpointBuilder.Metadata.Add(validationMetadata);
 
+                var problemResultMark = endpointBuilder.Metadata
+                    .FirstOrDefault(static md => md is EndpointParameterDataAnnotationsValidationProblemResultMark)
+                    as EndpointParameterDataAnnotationsValidationProblemResultMark;
+                if (problemResultMark is not null)
+                {
+                    if (!endpointBuilder.Metadata.Any(md =>
+                        md is IProducesResponseTypeMetadata pr
+                        && (pr.Type?.IsAssignableTo(typeof(HttpValidationProblemDetails))) is true
+                        && pr.StatusCode == problemResultMark.StatusCode)
+                    )
+                    {
+                        endpointBuilder.Metadata.Add(
+                            new ProducesResponseTypeMetadata(
+                                problemResultMark.StatusCode,
+                                typeof(HttpValidationProblemDetails),
+                                ["application/problem+json"]
+                            )
+                        );
+                    }
+                }
+
                 return async invocationContext =>
                 {
                     var endpoint = invocationContext.HttpContext.GetEndpoint();
-                    var metadata = endpoint?.Metadata
-                        .FirstOrDefault(static md => md is EndpointBindingParametersValidationMetadata) as EndpointBindingParametersValidationMetadata;
+                    var validationMetadata = endpoint?.Metadata.GetMetadata<EndpointBindingParametersValidationMetadata>();
 
-                    if (metadata is null) return await next(invocationContext);
+                    if (validationMetadata is null) return await next(invocationContext);
 
-                    Dictionary<string, object?> arguments = new(metadata.Count);
-                    foreach (var parameter in metadata)
+                    Dictionary<string, object?> arguments = new(validationMetadata.Count);
+                    foreach (var parameter in validationMetadata)
                     {
                         arguments.Add(parameter.Value.ParameterName!, invocationContext.Arguments[parameter.Value.ParameterIndex]);
                     }
 
                     try
                     {
-                        var results = await metadata.ValidateAsync(arguments);
+                        var results = await validationMetadata.ValidateAsync(arguments);
                         if (results != null) invocationContext.HttpContext.Items.Add(_validationResultItemName, results);
                     }
                     catch (Exception e)
                     {
                         var loggerFactory = invocationContext.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>();
                         var logger = loggerFactory.CreateLogger(_filterLoggerName);
-                        logger.LogError(e, "Validate parameter failed for route handler method '{methodName}'.", metadata.EndpointMethod.Name);
+                        logger.LogError(e, "Validate parameter failed for route handler method '{methodName}'.", validationMetadata.EndpointMethod.Name);
+
+                        var validationMetadataMark = endpoint?.Metadata.GetMetadata<EndpointBindingParametersValidationMetadataMark>();
+
+                        if (validationMetadataMark?.ThrowOnValidationException is true) throw;
+                    }
+
+                    var problemResultMark = endpoint?.Metadata.GetMetadata<EndpointParameterDataAnnotationsValidationProblemResultMark>();
+                    if (problemResultMark is not null)
+                    {
+                        var errors = invocationContext.HttpContext.GetEndpointParameterDataAnnotationsProblemDetails();
+
+                        if (errors is { Count: > 0 }) return Results.ValidationProblem(errors, statusCode: problemResultMark.StatusCode);
                     }
 
                     return await next(invocationContext);
@@ -156,24 +190,8 @@ public static class EndpointParameterValidationExtensions
     {
         validationEndpointBuilder.InnerBuilder.Add(endpointBuilder =>
         {
-            if (!endpointBuilder.Metadata.Any(static md => md is EndpointBindingParametersValidationMetadata)) return;
-
             var loggerFactory = endpointBuilder.ApplicationServices.GetRequiredService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger(_filterLoggerName);
-
-            if (!endpointBuilder.Metadata.Any(static md =>
-                md is IProducesResponseTypeMetadata pr
-                && (pr.Type?.IsAssignableTo(typeof(HttpValidationProblemDetails))) is true)
-            )
-            {
-                endpointBuilder.Metadata.Add(
-                    new ProducesResponseTypeMetadata(
-                        statusCode,
-                        typeof(HttpValidationProblemDetails),
-                        ["application/problem+json", "application/json"]
-                    )
-                );
-            }
 
             if (endpointBuilder.Metadata.Any(static md => md is EndpointParameterDataAnnotationsValidationProblemResultMark))
             {
@@ -181,18 +199,7 @@ public static class EndpointParameterValidationExtensions
                 return;
             }
 
-            endpointBuilder.Metadata.Add(new EndpointParameterDataAnnotationsValidationProblemResultMark());
-
-            endpointBuilder.FilterFactories.Add(static (filterFactoryContext, next) =>
-            {
-                return async invocationContext =>
-                {
-                    var errors = invocationContext.HttpContext.GetEndpointParameterDataAnnotationsProblemDetails();
-
-                    if (errors is { Count: > 0 }) return Results.ValidationProblem(errors);
-                    else return await next(invocationContext);
-                };
-            });
+            endpointBuilder.Metadata.Add(new EndpointParameterDataAnnotationsValidationProblemResultMark(statusCode));
         });
 
         return validationEndpointBuilder.InnerBuilder;
@@ -224,7 +231,7 @@ public static class EndpointParameterValidationExtensions
         this HttpContext httpContext,
         params IEnumerable<KeyValuePair<string, object?>> arguments)
     {
-         ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentNullException.ThrowIfNull(httpContext);
 
         var metadata = httpContext.GetEndpointBindingParametersValidationMetadata();
         if (metadata is null) return false;
@@ -338,7 +345,7 @@ public static class EndpointParameterValidationExtensions
                     .ToDictionary(
                         static fvr => fvr.Key.ToString()!,
                         fvr => fvr.Value
-                            .Select(vr => 
+                            .Select(vr =>
                                 ToLocalizedErrorMessage(
                                     vr,
                                     fvr.Key.ModelIsTopLevelFakeObject
@@ -479,9 +486,39 @@ public static class EndpointParameterValidationExtensions
 /// <summary>
 /// A class to mark endpoint parameter data annotations validation filer has been configured.
 /// </summary>
-public sealed class EndpointBindingParametersValidationMetadataMark;
+public sealed class EndpointBindingParametersValidationMetadataMark
+{
+    /// <summary>
+    /// Gets should an exception be thrown when an exception occurs during validation.
+    /// </summary>
+    public bool ThrowOnValidationException { get; }
+
+    /// <summary>
+    /// Initialize a new instance of the class <see cref="EndpointBindingParametersValidationMetadataMark"/>.
+    /// </summary>
+    /// <param name="throwOnValidationException">Should an exception be thrown when an exception occurs during validation.</param>
+    public EndpointBindingParametersValidationMetadataMark(bool throwOnValidationException)
+    {
+        ThrowOnValidationException = throwOnValidationException;
+    }
+}
 
 /// <summary>
 /// A class to mark endpoint parameter data annotations validation problem result filer has been configured.
 /// </summary>
-public sealed class EndpointParameterDataAnnotationsValidationProblemResultMark;
+public sealed class EndpointParameterDataAnnotationsValidationProblemResultMark
+{
+    /// <summary>
+    /// Gets the status code of the validation problem result.
+    /// </summary>
+    public int StatusCode { get; }
+
+    /// <summary>
+    /// Initialize a new instance of the class <see cref="EndpointParameterDataAnnotationsValidationProblemResultMark"/>.
+    /// </summary>
+    /// <param name="statusCode">Status code of the validation problem result.</param>
+    public EndpointParameterDataAnnotationsValidationProblemResultMark(int statusCode)
+    {
+        StatusCode = statusCode;
+    }
+}

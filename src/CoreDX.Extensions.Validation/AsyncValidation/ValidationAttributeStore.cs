@@ -45,6 +45,25 @@ public sealed class ValidationAttributeStore
     }
 
     /// <summary>
+    ///     Retrieves the type level validation attributes for the given type.
+    /// </summary>
+    /// <param name="type">The type that describes the type.  It cannot be null.</param>
+    /// <returns>The collection of validation attributes.  It could be empty.</returns>
+#if NET6_0_OR_GREATER
+    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+#endif
+    public IEnumerable<ValidationAttribute> GetTypeValidationAttributes(Type type)
+    {
+        if (type is null)
+        {
+            throw new ArgumentNullException(nameof(type));
+        }
+
+        var item = GetTypeStoreItem(type);
+        return item.ValidationAttributes;
+    }
+
+    /// <summary>
     ///     Retrieves the <see cref="DisplayAttribute" /> associated with the given type.  It may be null.
     /// </summary>
     /// <param name="validationContext">The context that describes the type.  It cannot be null.</param>
@@ -87,6 +106,32 @@ public sealed class ValidationAttributeStore
         EnsureValidationContext(validationContext);
         var typeItem = GetTypeStoreItem(validationContext.ObjectType);
         var item = typeItem.GetPropertyStoreItem(validationContext.MemberName!);
+        return item.ValidationAttributes;
+    }
+
+    /// <summary>
+    ///     Retrieves the set of validation attributes for the property
+    /// </summary>
+    /// <param name="type">The type that describes the property.  It cannot be null.</param>
+    /// <param name="propertyName">The property name of type.</param>
+    /// <returns>The collection of validation attributes.  It could be empty.</returns>
+#if NET6_0_OR_GREATER
+    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+#endif
+    public IEnumerable<ValidationAttribute> GetPropertyValidationAttributes(Type type, string propertyName)
+    {
+        if (type is null)
+        {
+            throw new ArgumentNullException(nameof(type));
+        }
+
+        if (propertyName is null)
+        {
+            throw new ArgumentNullException(nameof(propertyName));
+        }
+
+        var typeItem = GetTypeStoreItem(type);
+        var item = typeItem.GetPropertyStoreItem(propertyName);
         return item.ValidationAttributes;
     }
 

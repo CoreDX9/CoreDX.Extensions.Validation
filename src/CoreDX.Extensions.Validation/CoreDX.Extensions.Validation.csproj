@@ -3,13 +3,12 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <PackageVersion>1.1.4</PackageVersion>
+    <PackageVersion>1.1.5</PackageVersion>
     <PackageTags>DataAnnotation Validator AsyncValidator ObjectGraphValidator</PackageTags>
     <Description>Async validation and object graph validation extensions.</Description>
     <Title>New helper classes modified from System.ComponentModel.DataAnnotations.Validator to support async validation and object graph validation.</Title>
     <PackageReleaseNotes>
-      update: Change ObjectGraphValidator's exclude type.
-      fix: Fix null reference warning of type FieldIdentifier.
+      add: Add method ObjectGraphValidator.HasValidatableTarget to check type without validation.
     </PackageReleaseNotes>
   </PropertyGroup>
 

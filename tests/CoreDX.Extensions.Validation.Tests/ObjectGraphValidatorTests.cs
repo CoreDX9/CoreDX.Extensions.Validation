@@ -177,6 +177,13 @@ namespace CoreDX.Extensions.Validation.Tests
             Assert.True(result);
             Assert.Equal("The validation context has already been used. (Parameter 'validationContext')", exception.Message);
         }
+
+        [Fact]
+        public static void HasValidatableTarget()
+        {
+            Assert.True(ObjectGraphValidator.HasValidatableTarget(typeof(A)));
+            Assert.True(ObjectGraphValidator.HasValidatableTarget(typeof(E)));
+        }
     }
 
     #region Test classes
@@ -298,6 +305,16 @@ namespace CoreDX.Extensions.Validation.Tests
         {
             return ((IEnumerable)_dict).GetEnumerator();
         }
+    }
+
+    public class D
+    {
+        public A A { get; set; }
+    }
+
+    public class E
+    {
+        public D D { get; set; }
     }
 
     public class DerivedList : List<int>

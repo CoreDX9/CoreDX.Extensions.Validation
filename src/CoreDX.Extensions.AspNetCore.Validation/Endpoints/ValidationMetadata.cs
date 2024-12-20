@@ -1,11 +1,13 @@
-﻿using System.Collections;
+﻿using Microsoft.AspNetCore.Http;
+using System.Collections;
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
+using System.IO.Pipelines;
 using System.Reflection;
+using System.Security.Claims;
 using static CoreDX.Extensions.AspNetCore.Http.Validation.EndpointBindingParametersValidationMetadata;
-using static Microsoft.AspNetCore.Http.EndpointParameterValidationExtensions;
 
 namespace CoreDX.Extensions.AspNetCore.Http.Validation;
 
@@ -19,6 +21,8 @@ internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDic
     public EndpointBindingParametersValidationMetadata(MethodInfo endpointMethod, params IEnumerable<ParameterValidationMetadata> metadatas)
     {
         ArgumentNullException.ThrowIfNull(endpointMethod);
+
+        if (!metadatas.Any()) throw new ArgumentException("Argument does not have any element.", nameof(metadatas));
 
         Dictionary<string, ParameterValidationMetadata> tempMetadatas = [];
         HashSet<string> names = [];
@@ -86,11 +90,19 @@ internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDic
 
             if (string.IsNullOrEmpty(parameterInfo.Name)) throw new ArgumentException("Parameter must be have name.", nameof(parameterInfo));
 
+            if (!HasValidatableTarget(parameterInfo)) throw new ArgumentException("Parameter does not have any validatable target.", nameof(parameterInfo));
+
             _parameterIndex = parameterIndex;
             _displayName = parameterInfo.GetCustomAttribute<DisplayAttribute>()?.Name
                 ?? parameterInfo.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName;
 
             _requiredAttribute = parameterInfo.GetCustomAttribute<RequiredAttribute>();
+
+            if (_requiredAttribute is null && !IsOptionalParameter(parameterInfo))
+            {
+                _requiredAttribute = new() { ErrorMessage = "The parameter {0} is required" };
+            }
+
             _otherValidationAttributes = parameterInfo
                 .GetCustomAttributes<ValidationAttribute>()
                 .Where(attr => attr is not RequiredAttribute)
@@ -172,5 +184,37 @@ internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDic
 
             return resultStore.Any() ? resultStore : null;
         }
+
+        public static bool HasValidatableTarget(ParameterInfo parameter)
+        {
+            if (parameter.GetCustomAttributes<ValidationAttribute>().Any()) return true;
+
+            if (!IsOptionalParameter(parameter)) return true;
+
+            return ObjectGraphValidator.HasValidatableTarget(
+                parameter.ParameterType,
+                false,
+                static type => !IsRequestDelegateFactorySpecialBoundType(type)
+            );
+        }
+
+        private static bool IsOptionalParameter(ParameterInfo parameter)
+        {
+            var nullableInfo = new NullabilityInfoContext().Create(parameter);
+            var isNullable = parameter.HasDefaultValue || nullableInfo.ReadState != NullabilityState.NotNull;
+
+            return isNullable;
+        }
+
+        internal static bool IsRequestDelegateFactorySpecialBoundType(Type type) =>
+            type.IsAssignableTo(typeof(HttpContext))
+            || type.IsAssignableTo(typeof(HttpRequest))
+            || type.IsAssignableTo(typeof(HttpResponse))
+            || type.IsAssignableTo(typeof(ClaimsPrincipal))
+            || type.IsAssignableTo(typeof(CancellationToken))
+            || type.IsAssignableTo(typeof(IFormFile))
+            || type.IsAssignableTo(typeof(IEnumerable<IFormFile>))
+            || type.IsAssignableTo(typeof(Stream))
+            || type.IsAssignableTo(typeof(PipeReader));
     }
 }

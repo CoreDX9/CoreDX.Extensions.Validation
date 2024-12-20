@@ -33,6 +33,8 @@ await ObjectGraphValidator.ValidateObjectAsync(objectToBeValidated, objectGraphV
 var objectGraphValidationContext3 = new ValidationContext(objectToBeValidated);
 var validationResultStore = new ValidationResultStore();
 bool isValid = await ObjectGraphValidator.TryValidateObjectAsync(objectToBeValidated, objectGraphValidationContext3, validationResultStore, true);
+
+var hasValidatableTarget = ObjectGraphValidator.HasValidatableTarget(typeof(CustomObjcet));
 ```
 
 ## Main Types

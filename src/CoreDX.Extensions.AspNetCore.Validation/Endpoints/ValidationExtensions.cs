@@ -12,10 +12,9 @@ using System.Collections.Immutable;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.IO.Pipelines;
 using System.Reflection;
-using System.Security.Claims;
 using static CoreDX.Extensions.AspNetCore.Http.Validation.EndpointBindingParametersValidationMetadata;
+using static CoreDX.Extensions.AspNetCore.Http.Validation.EndpointBindingParametersValidationMetadata.ParameterValidationMetadata;
 
 namespace Microsoft.AspNetCore.Http;
 
@@ -68,7 +67,7 @@ public static class EndpointParameterValidationExtensions
             {
                 var loggerFactory = filterFactoryContext.ApplicationServices.GetRequiredService<ILoggerFactory>();
                 var logger = loggerFactory.CreateLogger(_filterLoggerName);
-                
+
                 var parameters = filterFactoryContext.MethodInfo.GetParameters();
 
                 var isServicePredicate = filterFactoryContext.ApplicationServices.GetService<IServiceProviderIsService>();
@@ -91,25 +90,32 @@ public static class EndpointParameterValidationExtensions
                     logger.LogDebug("Route handler method '{methodName}' does not contain any validatable parameters, skipping adding validation filter.", filterFactoryContext.MethodInfo.Name);
                 }
 
-                EndpointBindingParametersValidationMetadata? validationMetadata;
+                EndpointBindingParametersValidationMetadata? validationParameterMetadata = null;
                 try
                 {
-                    List<ParameterValidationMetadata> bindingParameters = new(bindingParameterIndexs.Count);
-                    foreach (var argumentIndex in bindingParameterIndexs)
+                    List<ParameterValidationMetadata> validatableBindingParameters = new(bindingParameterIndexs.Count);
+                    foreach (var parameterIndex in bindingParameterIndexs)
                     {
-                        bindingParameters.Add(new(parameters[argumentIndex], argumentIndex));
+                        var parameter = parameters[parameterIndex];
+                        if (!HasValidatableTarget(parameter)) continue;
+
+                        validatableBindingParameters.Add(new(parameter, parameterIndex));
                     }
-                    validationMetadata = new(filterFactoryContext.MethodInfo, bindingParameters);
+
+                    if (validatableBindingParameters.Count > 0)
+                    {
+                        validationParameterMetadata = new(filterFactoryContext.MethodInfo, validatableBindingParameters);
+                    }
                 }
                 catch (Exception e)
                 {
-                    validationMetadata = null;
+                    validationParameterMetadata = null;
                     logger.LogError(e, "Build parameter validation metadate failed for route handler method '{methodName}', skipping adding validation filter.", filterFactoryContext.MethodInfo.Name);
                 }
 
-                if (validationMetadata?.Any() is not true) return invocationContext => next(invocationContext);
+                if (validationParameterMetadata?.Any() is not true) return invocationContext => next(invocationContext);
 
-                endpointBuilder.Metadata.Add(validationMetadata);
+                endpointBuilder.Metadata.Add(validationParameterMetadata);
 
                 var problemResultMark = endpointBuilder.Metadata
                     .FirstOrDefault(static md => md is EndpointParameterDataAnnotationsValidationProblemResultMark)
@@ -119,7 +125,8 @@ public static class EndpointParameterValidationExtensions
                     if (!endpointBuilder.Metadata.Any(md =>
                         md is IProducesResponseTypeMetadata pr
                         && (pr.Type?.IsAssignableTo(typeof(HttpValidationProblemDetails))) is true
-                        && pr.StatusCode == problemResultMark.StatusCode)
+                        && pr.StatusCode == problemResultMark.StatusCode
+                        && pr.ContentTypes.Contains("application/problem+json"))
                     )
                     {
                         endpointBuilder.Metadata.Add(
@@ -454,17 +461,6 @@ public static class EndpointParameterValidationExtensions
         return endpoint?.Metadata
             .FirstOrDefault(static md => md is EndpointBindingParametersValidationMetadata) as EndpointBindingParametersValidationMetadata;
     }
-
-    internal static bool IsRequestDelegateFactorySpecialBoundType(Type type) =>
-        type.IsAssignableTo(typeof(HttpContext))
-        || type.IsAssignableTo(typeof(HttpRequest))
-        || type.IsAssignableTo(typeof(HttpResponse))
-        || type.IsAssignableTo(typeof(ClaimsPrincipal))
-        || type.IsAssignableTo(typeof(CancellationToken))
-        || type.IsAssignableTo(typeof(IFormFile))
-        || type.IsAssignableTo(typeof(IEnumerable<IFormFile>))
-        || type.IsAssignableTo(typeof(Stream))
-        || type.IsAssignableTo(typeof(PipeReader));
 
     /// <summary>
     /// A endpoint convention builder that configured parameter validation.

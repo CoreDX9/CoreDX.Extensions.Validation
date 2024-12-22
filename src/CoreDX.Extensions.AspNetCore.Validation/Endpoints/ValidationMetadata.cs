@@ -79,12 +79,19 @@ internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDic
     internal sealed class ParameterValidationMetadata
     {
         private readonly ParameterInfo _parameterInfo;
-        private readonly int _parameterIndex;
         private readonly string? _displayName;
         private readonly RequiredAttribute? _requiredAttribute;
         private readonly ImmutableList<ValidationAttribute> _otherValidationAttributes;
 
-        public ParameterValidationMetadata(ParameterInfo parameterInfo, int parameterIndex)
+        public string ParameterName => _parameterInfo.Name!;
+
+        public int ParameterIndex => _parameterInfo.Position;
+
+        public string? DisplayName => _displayName;
+
+        public ParameterInfo Parameter => _parameterInfo;
+
+        public ParameterValidationMetadata(ParameterInfo parameterInfo)
         {
             _parameterInfo = parameterInfo ?? throw new ArgumentNullException(nameof(parameterInfo));
 
@@ -92,7 +99,6 @@ internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDic
 
             if (!HasValidatableTarget(parameterInfo)) throw new ArgumentException("Parameter does not have any validatable target.", nameof(parameterInfo));
 
-            _parameterIndex = parameterIndex;
             _displayName = parameterInfo.GetCustomAttribute<DisplayAttribute>()?.Name
                 ?? parameterInfo.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName;
 
@@ -100,7 +106,7 @@ internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDic
 
             if (_requiredAttribute is null && !IsOptionalParameter(parameterInfo))
             {
-                _requiredAttribute = new() { ErrorMessage = "The parameter {0} is required" };
+                _requiredAttribute = new() { ErrorMessage = "The argument {0} is required" };
             }
 
             _otherValidationAttributes = parameterInfo
@@ -108,14 +114,6 @@ internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDic
                 .Where(attr => attr is not RequiredAttribute)
                 .ToImmutableList();
         }
-
-        public string ParameterName => _parameterInfo.Name!;
-
-        public int ParameterIndex => _parameterIndex;
-
-        public string? DisplayName => _displayName;
-
-        public ParameterInfo Parameter => _parameterInfo;
 
         public async ValueTask<ValidationResultStore?> ValidateAsync(object? argument, CancellationToken cancellationToken = default)
         {

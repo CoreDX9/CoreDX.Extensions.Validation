@@ -99,7 +99,7 @@ public static class EndpointParameterValidationExtensions
                         var parameter = parameters[parameterIndex];
                         if (!HasValidatableTarget(parameter)) continue;
 
-                        validatableBindingParameters.Add(new(parameter, parameterIndex));
+                        validatableBindingParameters.Add(new(parameter));
                     }
 
                     if (validatableBindingParameters.Count > 0)

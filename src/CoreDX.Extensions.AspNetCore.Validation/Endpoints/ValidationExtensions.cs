@@ -13,8 +13,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Reflection;
-using static CoreDX.Extensions.AspNetCore.Http.Validation.EndpointBindingParametersValidationMetadata;
-using static CoreDX.Extensions.AspNetCore.Http.Validation.EndpointBindingParametersValidationMetadata.ParameterValidationMetadata;
+using static CoreDX.Extensions.AspNetCore.Http.Validation.ParameterValidationMetadata;
 
 namespace Microsoft.AspNetCore.Http;
 

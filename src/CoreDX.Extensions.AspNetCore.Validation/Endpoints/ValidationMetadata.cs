@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
 using System.Reflection;
 using System.Security.Claims;
-using static CoreDX.Extensions.AspNetCore.Http.Validation.EndpointBindingParametersValidationMetadata;
 
 namespace CoreDX.Extensions.AspNetCore.Http.Validation;
 
@@ -75,144 +74,144 @@ internal sealed class EndpointBindingParametersValidationMetadata : IReadOnlyDic
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     #endregion
+}
 
-    internal sealed class ParameterValidationMetadata
+internal sealed class ParameterValidationMetadata
+{
+    private readonly ParameterInfo _parameterInfo;
+    private readonly string? _displayName;
+    private readonly RequiredAttribute? _requiredAttribute;
+    private readonly ImmutableList<ValidationAttribute> _otherValidationAttributes;
+
+    public string ParameterName => _parameterInfo.Name!;
+
+    public int ParameterIndex => _parameterInfo.Position;
+
+    public string? DisplayName => _displayName;
+
+    public ParameterInfo Parameter => _parameterInfo;
+
+    public ParameterValidationMetadata(ParameterInfo parameterInfo)
     {
-        private readonly ParameterInfo _parameterInfo;
-        private readonly string? _displayName;
-        private readonly RequiredAttribute? _requiredAttribute;
-        private readonly ImmutableList<ValidationAttribute> _otherValidationAttributes;
+        _parameterInfo = parameterInfo ?? throw new ArgumentNullException(nameof(parameterInfo));
 
-        public string ParameterName => _parameterInfo.Name!;
+        if (string.IsNullOrEmpty(parameterInfo.Name)) throw new ArgumentException("Parameter must be have name.", nameof(parameterInfo));
 
-        public int ParameterIndex => _parameterInfo.Position;
+        if (!HasValidatableTarget(parameterInfo)) throw new ArgumentException("Parameter does not have any validatable target.", nameof(parameterInfo));
 
-        public string? DisplayName => _displayName;
+        _displayName = parameterInfo.GetCustomAttribute<DisplayAttribute>()?.Name
+            ?? parameterInfo.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName;
 
-        public ParameterInfo Parameter => _parameterInfo;
+        _requiredAttribute = parameterInfo.GetCustomAttribute<RequiredAttribute>();
 
-        public ParameterValidationMetadata(ParameterInfo parameterInfo)
+        if (_requiredAttribute is null && !IsOptionalParameter(parameterInfo))
         {
-            _parameterInfo = parameterInfo ?? throw new ArgumentNullException(nameof(parameterInfo));
-
-            if (string.IsNullOrEmpty(parameterInfo.Name)) throw new ArgumentException("Parameter must be have name.", nameof(parameterInfo));
-
-            if (!HasValidatableTarget(parameterInfo)) throw new ArgumentException("Parameter does not have any validatable target.", nameof(parameterInfo));
-
-            _displayName = parameterInfo.GetCustomAttribute<DisplayAttribute>()?.Name
-                ?? parameterInfo.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName;
-
-            _requiredAttribute = parameterInfo.GetCustomAttribute<RequiredAttribute>();
-
-            if (_requiredAttribute is null && !IsOptionalParameter(parameterInfo))
-            {
-                _requiredAttribute = new() { ErrorMessage = "The argument {0} is required" };
-            }
-
-            _otherValidationAttributes = parameterInfo
-                .GetCustomAttributes<ValidationAttribute>()
-                .Where(attr => attr is not RequiredAttribute)
-                .ToImmutableList();
+            _requiredAttribute = new() { ErrorMessage = "The argument {0} is required" };
         }
 
-        public async ValueTask<ValidationResultStore?> ValidateAsync(object? argument, CancellationToken cancellationToken = default)
+        _otherValidationAttributes = parameterInfo
+            .GetCustomAttributes<ValidationAttribute>()
+            .Where(attr => attr is not RequiredAttribute)
+            .ToImmutableList();
+    }
+
+    public async ValueTask<ValidationResultStore?> ValidateAsync(object? argument, CancellationToken cancellationToken = default)
+    {
+        if (argument is not null && !argument.GetType().IsAssignableTo(_parameterInfo.ParameterType))
         {
-            if (argument is not null && !argument.GetType().IsAssignableTo(_parameterInfo.ParameterType))
+            throw new InvalidCastException($"Object cannot assign to {ParameterName} of type {_parameterInfo.ParameterType}.");
+        }
+
+        ValidationResultStore resultStore = [];
+        List<ValidationResult> results = [];
+
+        var validationContext = new ValidationContext(argument ?? new())
+        {
+            MemberName = ParameterName
+        };
+
+        if (DisplayName is not null) validationContext.DisplayName = DisplayName;
+
+        if (argument is null && _requiredAttribute is not null)
+        {
+            var result = _requiredAttribute.GetValidationResult(argument, validationContext)!;
+            result = new LocalizableValidationResult(result.ErrorMessage, result.MemberNames, _requiredAttribute, validationContext);
+            results.Add(result);
+        }
+
+        if (argument is not null)
+        {
+            foreach (var validation in _otherValidationAttributes)
             {
-                throw new InvalidCastException($"Object cannot assign to {ParameterName} of type {_parameterInfo.ParameterType}.");
-            }
-
-            ValidationResultStore resultStore = [];
-            List<ValidationResult> results = [];
-
-            var validationContext = new ValidationContext(argument ?? new())
-            {
-                MemberName = ParameterName
-            };
-
-            if (DisplayName is not null) validationContext.DisplayName = DisplayName;
-
-            if (argument is null && _requiredAttribute is not null)
-            {
-                var result = _requiredAttribute.GetValidationResult(argument, validationContext)!;
-                result = new LocalizableValidationResult(result.ErrorMessage, result.MemberNames, _requiredAttribute, validationContext);
-                results.Add(result);
-            }
-
-            if (argument is not null)
-            {
-                foreach (var validation in _otherValidationAttributes)
+                if (validation is AsyncValidationAttribute asyncValidation)
                 {
-                    if (validation is AsyncValidationAttribute asyncValidation)
+                    var result = await asyncValidation.GetValidationResultAsync(argument, validationContext, cancellationToken);
+                    if (result != ValidationResult.Success)
                     {
-                        var result = await asyncValidation.GetValidationResultAsync(argument, validationContext, cancellationToken);
-                        if (result != ValidationResult.Success)
-                        {
-                            result = new LocalizableValidationResult(result!.ErrorMessage, result.MemberNames, validation, validationContext);
-                            results.Add(result);
-                        }
-                    }
-                    else
-                    {
-                        var result = validation.GetValidationResult(argument, validationContext);
-                        if (result != ValidationResult.Success)
-                        {
-                            result = new LocalizableValidationResult(result!.ErrorMessage, result.MemberNames, validation, validationContext);
-                            results.Add(result);
-                        }
+                        result = new LocalizableValidationResult(result!.ErrorMessage, result.MemberNames, validation, validationContext);
+                        results.Add(result);
                     }
                 }
-
-                await ObjectGraphValidator.TryValidateObjectAsync(
-                    argument,
-                    new ValidationContext(argument),
-                    resultStore,
-                    true,
-                    static type => !IsRequestDelegateFactorySpecialBoundType(type),
-                    ParameterName,
-                    cancellationToken
-                );
+                else
+                {
+                    var result = validation.GetValidationResult(argument, validationContext);
+                    if (result != ValidationResult.Success)
+                    {
+                        result = new LocalizableValidationResult(result!.ErrorMessage, result.MemberNames, validation, validationContext);
+                        results.Add(result);
+                    }
+                }
             }
 
-            if (results.Count > 0)
-            {
-                var id = FieldIdentifier.GetFakeTopLevelObjectIdentifier(ParameterName);
-                resultStore.Add(id, results);
-            }
-
-            return resultStore.Any() ? resultStore : null;
-        }
-
-        public static bool HasValidatableTarget(ParameterInfo parameter)
-        {
-            if (parameter.GetCustomAttributes<ValidationAttribute>().Any()) return true;
-
-            if (!IsOptionalParameter(parameter)) return true;
-
-            return ObjectGraphValidator.HasValidatableTarget(
-                parameter.ParameterType,
-                false,
-                static type => !IsRequestDelegateFactorySpecialBoundType(type)
+            await ObjectGraphValidator.TryValidateObjectAsync(
+                argument,
+                new ValidationContext(argument),
+                resultStore,
+                true,
+                static type => !IsRequestDelegateFactorySpecialBoundType(type),
+                ParameterName,
+                cancellationToken
             );
         }
 
-        private static bool IsOptionalParameter(ParameterInfo parameter)
+        if (results.Count > 0)
         {
-            var nullableInfo = new NullabilityInfoContext().Create(parameter);
-            var isNullable = parameter.HasDefaultValue || nullableInfo.ReadState != NullabilityState.NotNull;
-
-            return isNullable;
+            var id = FieldIdentifier.GetFakeTopLevelObjectIdentifier(ParameterName);
+            resultStore.Add(id, results);
         }
 
-        internal static bool IsRequestDelegateFactorySpecialBoundType(Type type) =>
-            type.IsAssignableTo(typeof(HttpContext))
-            || type.IsAssignableTo(typeof(HttpRequest))
-            || type.IsAssignableTo(typeof(HttpResponse))
-            || type.IsAssignableTo(typeof(ClaimsPrincipal))
-            || type.IsAssignableTo(typeof(CancellationToken))
-            || type.IsAssignableTo(typeof(IFormFile))
-            || type.IsAssignableTo(typeof(IEnumerable<IFormFile>))
-            || type.IsAssignableTo(typeof(Stream))
-            || type.IsAssignableTo(typeof(PipeReader));
+        return resultStore.Any() ? resultStore : null;
     }
+
+    public static bool HasValidatableTarget(ParameterInfo parameter)
+    {
+        if (parameter.GetCustomAttributes<ValidationAttribute>().Any()) return true;
+
+        if (!IsOptionalParameter(parameter)) return true;
+
+        return ObjectGraphValidator.HasValidatableTarget(
+            parameter.ParameterType,
+            false,
+            static type => !IsRequestDelegateFactorySpecialBoundType(type)
+        );
+    }
+
+    private static bool IsOptionalParameter(ParameterInfo parameter)
+    {
+        var nullableInfo = new NullabilityInfoContext().Create(parameter);
+        var isNullable = parameter.HasDefaultValue || nullableInfo.ReadState != NullabilityState.NotNull;
+
+        return isNullable;
+    }
+
+    internal static bool IsRequestDelegateFactorySpecialBoundType(Type type) =>
+        type.IsAssignableTo(typeof(HttpContext))
+        || type.IsAssignableTo(typeof(HttpRequest))
+        || type.IsAssignableTo(typeof(HttpResponse))
+        || type.IsAssignableTo(typeof(ClaimsPrincipal))
+        || type.IsAssignableTo(typeof(CancellationToken))
+        || type.IsAssignableTo(typeof(IFormFile))
+        || type.IsAssignableTo(typeof(IEnumerable<IFormFile>))
+        || type.IsAssignableTo(typeof(Stream))
+        || type.IsAssignableTo(typeof(PipeReader));
 }

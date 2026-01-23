@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/solution-items/">
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/CoreDX.Extensions.AspNetCore.Validation/CoreDX.Extensions.AspNetCore.Validation.csproj" />
+    <Project Path="src/CoreDX.Extensions.Validation/CoreDX.Extensions.Validation.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CoreDX.Extensions.Validation.Tests/CoreDX.Extensions.Validation.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.Collections;
 #if NET8_0_OR_GREATER
 using System.Runtime.CompilerServices;
+#else
+using System.Reflection;
 #endif
 
 namespace CoreDX.Extensions.AspNetCore.Mvc.ModelBinding.Validation;
@@ -18,6 +20,35 @@ internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrate
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_BoundConstructorParameterMapping")]
     internal extern static IReadOnlyDictionary<ModelMetadata, ModelMetadata> GetBoundConstructorParameterMapping(ModelMetadata modelMetadata);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_ValidationModelName")]
+    internal extern static string? GetValidationModelName(ModelMetadata modelMetadata);
+#else
+    internal static MethodInfo ThrowIfRecordTypeHasValidationOnProperties =
+        typeof(ModelMetadata)
+            .GetMethod(
+                nameof(ThrowIfRecordTypeHasValidationOnProperties),
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+    internal static PropertyInfo GetBoundProperties =
+        typeof(ModelMetadata)
+            .GetProperty(
+                "BoundProperties",
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+    internal static PropertyInfo GetBoundConstructorParameterMapping =
+        typeof(ModelMetadata)
+            .GetProperty(
+                "BoundConstructorParameterMapping",
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+#endif
+
+#if NET7_0
+    internal static PropertyInfo GetValidationModelName =
+        typeof(ModelMetadata)
+            .GetProperty(
+                "ValidationModelName",
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
 #endif
 
     /// <summary>
@@ -69,11 +100,7 @@ internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrate
 #if NET8_0_OR_GREATER
                 ThrowIfRecordTypeHasValidationOnProperties(_modelMetadata);
 #else
-                _modelMetadata.GetType()
-                    .GetMethod(
-                        "ThrowIfRecordTypeHasValidationOnProperties",
-                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-                    .Invoke(modelMetadata, null);
+                ThrowIfRecordTypeHasValidationOnProperties.Invoke(modelMetadata, null);
 #endif
 
                 _parameters = _modelMetadata.BoundConstructor.BoundConstructorParameters!;
@@ -83,11 +110,7 @@ internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrate
 #if NET8_0_OR_GREATER
             _properties = GetBoundProperties(_modelMetadata);
 #else
-            _properties = (_modelMetadata.GetType()
-                .GetProperty(
-                    "BoundProperties",
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-                .GetValue(modelMetadata) as IReadOnlyList<ModelMetadata>)!;
+            _properties = (GetBoundProperties.GetValue(modelMetadata) as IReadOnlyList<ModelMetadata>)!;
 #endif
 
             _count = _properties!.Count + _parameters.Count;
@@ -119,19 +142,16 @@ internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrate
                 }
                 else
                 {
-#pragma warning disable CS8602 // 解引用可能出现空引用。
                     //_modelMetadata.BoundConstructorParameterMapping
 #if NET8_0_OR_GREATER
                     var parametersPerProperty = GetBoundConstructorParameterMapping(_modelMetadata);
 #else
-                    var parametersPerProperty = _modelMetadata.GetType().GetProperty("BoundConstructorParameterMapping", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-                        .GetValue(_modelMetadata) as IReadOnlyDictionary<ModelMetadata, ModelMetadata>;
+                    var parametersPerProperty = (GetBoundConstructorParameterMapping.GetValue(_modelMetadata) as IReadOnlyDictionary<ModelMetadata, ModelMetadata>)!;
 #endif
                     if (!parametersPerProperty.TryGetValue(parameter, out var property))
                     {
                         throw new InvalidOperationException(_modelMetadata.ModelType.Name);
                     }
-#pragma warning restore CS8602 // 解引用可能出现空引用。
 
                     _entry = new ValidationEntry(parameter, key, () => GetModel(_model, property));
                 }
@@ -139,7 +159,14 @@ internal sealed class DefaultComplexObjectValidationStrategy : IValidationStrate
             else
             {
                 var property = _properties[_index - _parameters.Count];
-                var propertyName = /*property.ValidationModelName ??*/ property.BinderModelName ?? property.PropertyName;
+#if NET7_0
+                var validationModelName = GetValidationModelName.GetValue(property) as string;
+#elif NET8_0_OR_GREATER
+                var validationModelName = GetValidationModelName(property);
+#else // NET6
+                var validationModelName = (string?)null;
+#endif
+                var propertyName = validationModelName ?? property.BinderModelName ?? property.PropertyName;
                 var key = ModelNames.CreatePropertyModelName(_key, propertyName);
 
                 if (_model == null)

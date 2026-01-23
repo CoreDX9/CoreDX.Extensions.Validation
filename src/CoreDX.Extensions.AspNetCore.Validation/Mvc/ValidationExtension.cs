@@ -39,9 +39,11 @@ public static class AsyncValidationExtension
     /// </summary>
     /// <param name="builder">The <see cref="IMvcCoreBuilder"/>.</param>
     /// <returns>The <see cref="IMvcCoreBuilder"/> that can be used to further configure the MVC services.</returns>
-    /// <remarks>You should call <see cref="MvcDataAnnotationsMvcCoreBuilderExtensions.AddDataAnnotations(IMvcCoreBuilder)"/> before this.</remarks>
+    /// <remarks>Don't call <see cref="MvcDataAnnotationsMvcCoreBuilderExtensions.AddDataAnnotations(IMvcCoreBuilder)"/> after this call.</remarks>
     public static IMvcCoreBuilder AddAsyncDataAnnotations(this IMvcCoreBuilder builder)
     {
+        builder.AddDataAnnotations();
+
         builder.Services.AddSingleton<IConfigureOptions<MvcOptions>, ConfigureMvcOptionsSetup>();
         builder.Services.AddSingleton<ParameterBinder, AsyncParamterBinder>();
         builder.Services.TryAddSingleton<IAsyncObjectModelValidator>(s =>

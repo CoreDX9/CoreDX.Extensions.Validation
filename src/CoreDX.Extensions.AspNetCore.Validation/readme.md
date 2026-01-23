@@ -15,9 +15,7 @@ services
 // Or
 services
     .AddMvcCore()
-    // Add data annotations validation services frist when using mvc core.
-    .AddDataAnnotations()
-    // Add async data annotations validation services.
+    // Add async data annotations validation services (Common data annotations validation services base has been added in this mathod).
     .AddAsyncDataAnnotations();
 ```
 

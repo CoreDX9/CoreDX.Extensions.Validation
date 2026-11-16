@@ -325,9 +325,32 @@ namespace CoreDX.Extensions.Validation.Tests
 
     public class AsyncMemberNamesFailAttribute : AsyncValidationAttribute
     {
-        protected override ValueTask<ValidationResult> IsValidAsync(object value, ValidationContext validationContext, CancellationToken cancellationToken = default)
+#if NET11_0_OR_GREATER
+
+        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
-            return ValueTask.FromResult(new ValidationResult(FormatErrorMessage(validationContext.MemberName), [nameof(B.IdB), nameof(B.NameB)]));
+            throw new InvalidOperationException("Async validation called synchronously.");
+        }
+
+#endif
+
+        protected override
+#if NET11_0_OR_GREATER
+            Task<ValidationResult>
+#else
+            ValueTask<ValidationResult>
+#endif
+
+            IsValidAsync(object value, ValidationContext validationContext, CancellationToken cancellationToken = default)
+        {
+            return
+#if NET11_0_OR_GREATER
+                Task
+#else
+                ValueTask
+#endif
+                
+                    .FromResult(new ValidationResult(FormatErrorMessage(validationContext.MemberName), [nameof(B.IdB), nameof(B.NameB)]));
         }
     }
 

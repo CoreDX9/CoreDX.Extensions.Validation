@@ -39,9 +39,9 @@ var hasValidatableTarget = ObjectGraphValidator.HasValidatableTarget(typeof(Cust
 
 ## Main Types
 The main types provided by this library are:
-* `CoreDX.Extensions.ComponentModel.DataAnnotations.AsyncValidationAttribute`
+* `CoreDX.Extensions.ComponentModel.DataAnnotations.AsyncValidationAttribute` Limited to versions below .NET 11.0
 * `CoreDX.Extensions.ComponentModel.DataAnnotations.CustomAsyncValidationAttribute`
-* `CoreDX.Extensions.ComponentModel.DataAnnotations.IAsyncValidatableObject`
-* `CoreDX.Extensions.ComponentModel.DataAnnotations.AsyncValidator`
+* `CoreDX.Extensions.ComponentModel.DataAnnotations.IAsyncValidatableObject` Limited to versions below .NET 11.0
+* `CoreDX.Extensions.ComponentModel.DataAnnotations.AsyncValidator` Limited to versions below .NET 11.0
 * `CoreDX.Extensions.ComponentModel.DataAnnotations.ObjectGraphValidator`
 * `CoreDX.Extensions.ComponentModel.DataAnnotations.ValidationResultStore`

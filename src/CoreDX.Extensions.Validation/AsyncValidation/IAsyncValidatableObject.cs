@@ -1,6 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if NET11_0_OR_GREATER
+
+#else
+
 namespace CoreDX.Extensions.ComponentModel.DataAnnotations;
 
 /// <summary>
@@ -16,3 +20,5 @@ public interface IAsyncValidatableObject
     /// <returns>A collection that holds failed-validation information.</returns>
     IAsyncEnumerable<ValidationResult> ValidateAsync(ValidationContext validationContext, CancellationToken cancellationToken = default);
 }
+
+#endif

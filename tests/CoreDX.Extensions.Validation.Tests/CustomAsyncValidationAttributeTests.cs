@@ -11,8 +11,14 @@ public class CustomAsyncValidationAttributeTests
         var obj = new TestObject();
 
         List<ValidationResult> results = [];
-        var isValid = await AsyncValidator.TryValidateObject(obj, new ValidationContext(obj), results, true);
-        
+        var isValid =
+
+#if NET11_0_OR_GREATER
+        await Validator.TryValidateObjectAsync(obj, new ValidationContext(obj), results, true);
+#else
+        await AsyncValidator.TryValidateObject(obj, new ValidationContext(obj), results, true);
+#endif
+
         Assert.False(isValid);
         Assert.Equal(4, results.Count);
 
@@ -35,28 +41,55 @@ public class CustomAsyncValidationAttributeTests
         var messageTemplate = "The CustomValidationAttribute method '{0}' in type '{1}' must match the expected signature: public static Task<ValidationResult>(or ValueTask<ValidationResult>) {0}(object value, ValidationContext context, CancellationToken cancellationToken).  The value can be strongly typed.  The ValidationContext and CancellationToken parameter are optional.";
         
         var obj1 = new TestObject1();
-        var exception1 = await Assert.ThrowsAsync<InvalidOperationException>(() => AsyncValidator.TryValidateObject(obj1, new ValidationContext(obj1), [], true).AsTask());
-        
+        var exception1 =
+
+#if NET11_0_OR_GREATER
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Validator.TryValidateObjectAsync(obj1, new ValidationContext(obj1), [], true));
+#else
+            await Assert.ThrowsAsync<InvalidOperationException>(() => AsyncValidator.TryValidateObject(obj1, new ValidationContext(obj1), [], true).AsTask());
+#endif
+
         Assert.Equal(
             string.Format(messageTemplate, "Test1", "TestObject1"),
             exception1.Message);
 
         var obj2 = new TestObject2();
-        var exception2 = await Assert.ThrowsAsync<InvalidOperationException>(() => AsyncValidator.TryValidateObject(obj2, new ValidationContext(obj2), [], true).AsTask());
+        var exception2 =
+
+#if NET11_0_OR_GREATER
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Validator.TryValidateObjectAsync(obj2, new ValidationContext(obj2), [], true));
+#else
+            await Assert.ThrowsAsync<InvalidOperationException>(() => AsyncValidator.TryValidateObject(obj2, new ValidationContext(obj2), [], true).AsTask());
+#endif
+
 
         Assert.Equal(
             string.Format(messageTemplate, "Test2", "TestObject2"),
             exception2.Message);
 
         var obj3 = new TestObject3();
-        var exception3 = await Assert.ThrowsAsync<InvalidOperationException>(() => AsyncValidator.TryValidateObject(obj3, new ValidationContext(obj3), [], true).AsTask());
+        var exception3 =
+
+#if NET11_0_OR_GREATER
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Validator.TryValidateObjectAsync(obj3, new ValidationContext(obj3), [], true));
+#else
+            await Assert.ThrowsAsync<InvalidOperationException>(() => AsyncValidator.TryValidateObject(obj3, new ValidationContext(obj3), [], true).AsTask());
+#endif
+
 
         Assert.Equal(
             string.Format(messageTemplate, "Test3", "TestObject3"),
             exception3.Message);
 
         var obj4 = new TestObject4();
-        var exception4 = await Assert.ThrowsAsync<InvalidOperationException>(() => AsyncValidator.TryValidateObject(obj4, new ValidationContext(obj4), [], true).AsTask());
+        var exception4 =
+
+#if NET11_0_OR_GREATER
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Validator.TryValidateObjectAsync(obj4, new ValidationContext(obj4), [], true));
+#else
+            await Assert.ThrowsAsync<InvalidOperationException>(() => AsyncValidator.TryValidateObject(obj4, new ValidationContext(obj4), [], true).AsTask());
+#endif
+
 
         Assert.Equal(
             string.Format(messageTemplate, "Test4", "TestObject4"),

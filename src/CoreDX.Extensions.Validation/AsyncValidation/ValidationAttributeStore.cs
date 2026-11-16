@@ -22,6 +22,11 @@ namespace CoreDX.Extensions.ComponentModel.DataAnnotations;
 /// </remarks>
 public sealed class ValidationAttributeStore
 {
+#if NET6_0_OR_GREATER
+    internal const string _validationContextInstanceTypeNotStaticallyDiscovered = "The Type of validationContext.ObjectType cannot be statically discovered.";
+    internal const string _validationInstanceTypeNotStaticallyDiscovered = "The Type of instance cannot be statically discovered and the Type's properties can be trimmed.";
+#endif
+
     private readonly ConcurrentDictionary<Type, TypeStoreItem> _typeStoreItems = new();
 
     /// <summary>
@@ -35,7 +40,7 @@ public sealed class ValidationAttributeStore
     /// <param name="validationContext">The context that describes the type.  It cannot be null.</param>
     /// <returns>The collection of validation attributes.  It could be empty.</returns>
 #if NET6_0_OR_GREATER
-    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+    [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
     public IEnumerable<ValidationAttribute> GetTypeValidationAttributes(ValidationContext validationContext)
     {
@@ -50,7 +55,7 @@ public sealed class ValidationAttributeStore
     /// <param name="type">The type that describes the type.  It cannot be null.</param>
     /// <returns>The collection of validation attributes.  It could be empty.</returns>
 #if NET6_0_OR_GREATER
-    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+    [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
     public IEnumerable<ValidationAttribute> GetTypeValidationAttributes(Type type)
     {
@@ -69,7 +74,7 @@ public sealed class ValidationAttributeStore
     /// <param name="validationContext">The context that describes the type.  It cannot be null.</param>
     /// <returns>The display attribute instance, if present.</returns>
 #if NET6_0_OR_GREATER
-    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+    [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
     public DisplayAttribute? GetTypeDisplayAttribute(ValidationContext validationContext)
     {
@@ -84,7 +89,7 @@ public sealed class ValidationAttributeStore
     /// <param name="validationContext">The context that describes the type.  It cannot be null.</param>
     /// <returns>The display attribute instance, if present.</returns>
 #if NET6_0_OR_GREATER
-    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+    [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
     public DisplayNameAttribute? GetTypeDisplayNameAttribute(ValidationContext validationContext)
     {
@@ -99,7 +104,7 @@ public sealed class ValidationAttributeStore
     /// <param name="validationContext">The context that describes the property.  It cannot be null.</param>
     /// <returns>The collection of validation attributes.  It could be empty.</returns>
 #if NET6_0_OR_GREATER
-    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+    [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
     public IEnumerable<ValidationAttribute> GetPropertyValidationAttributes(ValidationContext validationContext)
     {
@@ -116,7 +121,7 @@ public sealed class ValidationAttributeStore
     /// <param name="propertyName">The property name of type.</param>
     /// <returns>The collection of validation attributes.  It could be empty.</returns>
 #if NET6_0_OR_GREATER
-    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+    [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
     public IEnumerable<ValidationAttribute> GetPropertyValidationAttributes(Type type, string propertyName)
     {
@@ -141,7 +146,7 @@ public sealed class ValidationAttributeStore
     /// <param name="validationContext">The context that describes the property.  It cannot be null.</param>
     /// <returns>The display attribute instance, if present.</returns>
 #if NET6_0_OR_GREATER
-    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+    [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
     public DisplayAttribute? GetPropertyDisplayAttribute(ValidationContext validationContext)
     {
@@ -157,7 +162,7 @@ public sealed class ValidationAttributeStore
     /// <param name="validationContext">The context that describes the property.  It cannot be null.</param>
     /// <returns>The display attribute instance, if present.</returns>
 #if NET6_0_OR_GREATER
-    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+    [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
     public DisplayNameAttribute? GetPropertyDisplayNameAttribute(ValidationContext validationContext)
     {
@@ -173,7 +178,7 @@ public sealed class ValidationAttributeStore
     /// <param name="validationContext">The context that describes the property.  It cannot be null.</param>
     /// <returns>The type of the specified property</returns>
 #if NET6_0_OR_GREATER
-    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+    [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
     public Type GetPropertyType(ValidationContext validationContext)
     {
@@ -191,7 +196,7 @@ public sealed class ValidationAttributeStore
     /// <param name="validationContext">The <see cref="ValidationContext" /> to check.</param>
     /// <returns><c>true</c> when the <paramref name="validationContext" /> represents a property, <c>false</c> otherwise.</returns>
 #if NET6_0_OR_GREATER
-    [RequiresUnreferencedCode(AsyncValidator._validationContextInstanceTypeNotStaticallyDiscovered)]
+    [RequiresUnreferencedCode(_validationContextInstanceTypeNotStaticallyDiscovered)]
 #endif
     public bool IsPropertyContext(ValidationContext validationContext)
     {

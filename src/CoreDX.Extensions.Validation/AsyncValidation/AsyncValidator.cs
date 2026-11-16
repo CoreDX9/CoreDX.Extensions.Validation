@@ -8,6 +8,10 @@ using System.Diagnostics.CodeAnalysis;
 #endif
 using System.Diagnostics;
 
+#if NET11_0_OR_GREATER
+
+#else
+
 namespace CoreDX.Extensions.ComponentModel.DataAnnotations;
 
 /// <summary>
@@ -718,3 +722,5 @@ public static class AsyncValidator
         internal void ThrowValidationException() => throw new ValidationException(ValidationResult, _validationAttribute, _value);
     }
 }
+
+#endif

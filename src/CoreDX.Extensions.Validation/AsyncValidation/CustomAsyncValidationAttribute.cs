@@ -135,6 +135,16 @@ public sealed class CustomAsyncValidationAttribute : AsyncValidationAttribute
     }
     #endregion
 
+#if NET11_0_OR_GREATER
+
+    /// <inheritdoc/>
+    protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+    {
+        throw new NotSupportedException();
+    }
+
+#endif
+
     /// <summary>
     ///     Override of validation method.  See <see cref="ValidationAttribute.IsValid(object, ValidationContext)" />.
     /// </summary>
@@ -146,7 +156,13 @@ public sealed class CustomAsyncValidationAttribute : AsyncValidationAttribute
     /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
     /// <returns>Whatever the <see cref="Method" /> in <see cref="ValidatorType" /> returns.</returns>
     /// <exception cref="InvalidOperationException"> is thrown if the current attribute is malformed.</exception>
-    protected override async ValueTask<ValidationResult?> IsValidAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken = default)
+    protected override async
+#if NET11_0_OR_GREATER
+        Task<ValidationResult?>
+#else
+        ValueTask<ValidationResult?>
+#endif
+        IsValidAsync(object? value, ValidationContext validationContext, CancellationToken cancellationToken = default)
     {
         // If attribute is not valid, throw an exception right away to inform the developer
         ThrowIfAttributeNotWellFormed();

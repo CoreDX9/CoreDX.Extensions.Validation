@@ -1,3 +1,7 @@
+#if NET11_0_OR_GREATER
+
+#else
+
 using CoreDX.Extensions.ComponentModel.DataAnnotations;
 using Newtonsoft.Json.Linq;
 using System.ComponentModel;
@@ -1462,3 +1466,5 @@ namespace CoreDX.Extensions.Validation.Tests
         }
     }
 }
+
+#endif
